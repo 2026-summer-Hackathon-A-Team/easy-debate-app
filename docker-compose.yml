@@ -1,0 +1,11 @@
+services:
+  # backendコンテナ
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      # DBの接続先情報
+      - DATABASE_URL=${DATABASE_URL}
+      # CORSの許可するオリジン
+      - CORS_ORIGINS=${CORS_ORIGINS}

@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+
+@layer base {
+  h1 {
+    @apply text-[22px] font-bold;
+  }
+
+  h2 {
+  }
+
+  h3 {
+    @apply text-[13px] text-gray-500;
+  }
+
+  input {
+    @apply border-1 border-gray-400/50 outline-none focus:border-[#4c7e63] rounded-lg px-2 py-2;
+  }
+
+  a {
+    @apply text-[#4c7e63] font-bold;
+  }
+}
