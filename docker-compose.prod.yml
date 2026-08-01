@@ -7,6 +7,10 @@ services:
     restart: always
     ports:
       - "80:8080"
+      - "443:8443" #本番ではHTTPS通信を行うため、ポート番号を変更
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/letsencrypt
     depends_on:
       - backend
 
@@ -45,3 +49,5 @@ services:
 
 volumes:
   mysql_data:
+  certbot_conf:
+  certbot_www:
