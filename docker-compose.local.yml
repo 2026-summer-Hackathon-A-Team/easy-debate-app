@@ -14,6 +14,11 @@ services:
 
   # backendコンテナ
   backend:
+    # backendコンテナのbuildステージを指定してビルドする
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
     # 開発用サーバー起動コマンド
     command:
       - npm

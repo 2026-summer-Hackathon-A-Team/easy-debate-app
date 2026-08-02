@@ -4,6 +4,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
     environment:
       # DBの接続先情報
       - DATABASE_URL=${DATABASE_URL}
