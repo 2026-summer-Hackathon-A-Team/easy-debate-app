@@ -42,5 +42,5 @@ COPY --from=builder  /backend/dist ./dist
 # ポート番号3000(Honoデフォルトポート番号)
 EXPOSE 3000
 
-# サーバー起動、
-CMD ["node", "dist/index.js", "npx prisma migrate deploy"]
+# サーバー起動
+CMD ["node" && "dist/index.js" && "npx" "prisma" "migrate" "deploy"]
