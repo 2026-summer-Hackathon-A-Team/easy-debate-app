@@ -1,11 +1,28 @@
+@import '@fontsource/noto-sans-jp/400.css';
+@import '@fontsource/noto-sans-jp/500.css';
+@import '@fontsource/noto-sans-jp/700.css';
+@import '@fontsource/zen-kaku-gothic-new/500.css';
+@import '@fontsource/zen-kaku-gothic-new/700.css';
+@import '@fontsource/zen-kaku-gothic-new/900.css';
 @import 'tailwindcss';
 
+@theme {
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-heading: 'Zen Kaku Gothic New', sans-serif;
+}
+
 @layer base {
-  h1 {
-    @apply text-[22px] font-bold;
+  body {
+    @apply font-body;
   }
 
+  h1,
   h2 {
+    @apply font-heading;
+  }
+
+  h1 {
+    @apply text-[22px] font-extrabold;
   }
 
   h3 {
@@ -13,10 +30,15 @@
   }
 
   input {
-    @apply border-1 border-gray-400/50 outline-none focus:border-[#4c7e63] rounded-lg px-2 py-2;
+    @apply rounded-lg border border-gray-400/50 px-3 py-3
+      font-body outline-none focus:border-[#4c7e63];
+  }
+
+  button {
+    @apply font-heading;
   }
 
   a {
-    @apply text-[#4c7e63] font-bold;
+    @apply font-bold text-[#4c7e63];
   }
 }
