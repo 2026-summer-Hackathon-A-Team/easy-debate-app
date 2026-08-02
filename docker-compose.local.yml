@@ -33,7 +33,6 @@ services:
       # PORT
       - PORT=${PORT}
     ports:
-      - '3000:3000'
       # prisma studioのブラウザポート番号
       - '51212:51212'
     depends_on:

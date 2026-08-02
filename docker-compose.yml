@@ -11,3 +11,6 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       # CORSの許可するオリジン
       - CORS_ORIGINS=${CORS_ORIGINS}
+
+    ports:
+      - '3000:3000'

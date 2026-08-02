@@ -43,4 +43,4 @@ COPY --from=builder  /backend/dist ./dist
 EXPOSE 3000
 
 # サーバー起動
-CMD ["node" && "dist/index.js" && "npx" "prisma" "migrate" "deploy"]
+CMD ["node", "dist/index.js", "&&", "npx", "prisma", "migrate", "deploy"]
