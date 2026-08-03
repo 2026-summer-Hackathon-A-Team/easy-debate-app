@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Header from '../components/Header'
+import Header from '../components/Header';
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -7,12 +7,10 @@ type MainLayoutProps = {
 
 function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="flex min-h-dvh flex-col bg-[#f2f1ee]">
+    <div className="min-h-dvh bg-[#f2f1ee]">
       <Header />
 
-      <main className='flex flex-1 min-h-0 flex-col'>
-        {children}
-      </main>
+      <main className="min-h-0 pt-8 md:pt-16">{children}</main>
     </div>
   );
 }

@@ -16,24 +16,6 @@
     @apply font-body;
   }
 
-  h1,
-  h2 {
-    @apply font-heading;
-  }
-
-  h1 {
-    @apply text-[22px] font-extrabold;
-  }
-
-  h3 {
-    @apply text-[13px] text-gray-500;
-  }
-
-  input {
-    @apply rounded-lg border border-gray-400/50 px-3 py-3
-      font-body outline-none focus:border-[#4c7e63];
-  }
-
   button {
     @apply font-heading;
   }
