@@ -1,10 +1,10 @@
 import type { InputHTMLAttributes } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-type TextFielType = 'text' | 'password';
+type TextFieldType = 'text' | 'password';
 
 type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
-  type?: TextFielType;
+  type?: TextFieldType;
 };
 
 function TextField({ className, type = 'text', ...props }: TextFieldProps) {

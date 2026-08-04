@@ -28,7 +28,6 @@ function SigninPage() {
             placeholder="ユーザー名を入力"
             minLength={6}
             maxLength={20}
-            required
           />
         </label>
 

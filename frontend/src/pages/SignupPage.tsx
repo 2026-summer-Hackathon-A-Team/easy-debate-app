@@ -29,7 +29,6 @@ function SignupPage() {
             placeholder="6~20文字（英数字）"
             minLength={6}
             maxLength={20}
-            required
           />
         </label>
 
@@ -41,7 +40,6 @@ function SignupPage() {
             placeholder="8~64文字（英数字混合）"
             minLength={8}
             maxLength={64}
-            required
           />
         </label>
 
