@@ -4,8 +4,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: production
-    restart: unless-stopped
     environment:
       # DBの接続先情報
       - DATABASE_URL=${DATABASE_URL}
@@ -14,3 +12,5 @@ services:
 
     ports:
       - '3000:3000'
+      # prisma studioのブラウザポート番号
+      - '51212:51212'
