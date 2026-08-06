@@ -1,0 +1,9 @@
+services:
+  # backendコンテナ
+  backend:
+    # backendコンテナのproductionステージを指定してビルドする
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped

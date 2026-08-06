@@ -14,11 +14,9 @@ services:
 
   # backendコンテナ
   backend:
-    # 開発用サーバー起動コマンド
-    command:
-      - npm
-      - run
-      - dev
+    # backendコンテナのdevelopmentステージを指定してビルドする
+    build:
+      target: development
     volumes:
       - ./backend:/backend
       - /backend/node_modules
@@ -27,10 +25,6 @@ services:
       - DEBUG=${DEBUG}
       # PORT
       - PORT=${PORT}
-    ports:
-      - '3000:3000'
-      # prisma studioのブラウザポート番号
-      - '51212:51212'
     depends_on:
       db:
         condition: service_healthy
