@@ -46,7 +46,7 @@ COPY . .
 EXPOSE 3000
 
 # サーバー起動
-CMD [ "npm", "run", "dev" ]
+CMD [ "npm", "run", "start" ]
 
 # ---本番用ステージ(本番環境、パッケージを限定する)---
 FROM node:24 AS production
