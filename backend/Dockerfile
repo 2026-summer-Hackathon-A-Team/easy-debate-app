@@ -46,7 +46,7 @@ COPY . .
 EXPOSE 3000
 
 # サーバー起動
-CMD [ "npm", "run", "start" ]
+CMD [ "npm", "run", "dev" ]
 
 # ---本番用ステージ(本番環境、パッケージを限定する)---
 FROM node:24 AS production
@@ -69,4 +69,4 @@ COPY --from=builder  /backend/dist ./dist
 EXPOSE 3000
 
 # サーバー起動
-CMD [ "npx", "prisma", "migrate", "deploy", "&&", "node", "dist/index.js"]
+CMD [ "npx", "prisma", "migrate", "deploy", "&&", "npm", "run", "start" ]
