@@ -42,7 +42,7 @@ services:
       TZ: 'Asia/Tokyo'
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/prisma/spl/local-init.sql:/docker-entrypoint-initdb.d/local-init.sql:ro
+      - ./backend/prisma/sql/local-init.sql:/docker-entrypoint-initdb.d/local-init.sql:ro
     healthcheck:
       # ヘルスチェック実行コマンド
       test:
