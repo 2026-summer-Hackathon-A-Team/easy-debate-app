@@ -45,7 +45,7 @@
 
 - 開発用DBを初期化して、Prismaスキーマの内容を再反映
   ```sh
-  docker compose exec backend sh -c 'npx prisma migrate reset && npx prisma generate'
+  docker compose exec backend sh -c 'npx prisma migrate reset --force && npx prisma generate'
   ```
 
 ### DBの確認(Prisma Studioを使用)
