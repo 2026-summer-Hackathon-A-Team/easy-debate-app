@@ -6,7 +6,9 @@ function HomePage() {
   return (
     <>
       <Heading level={1} className="text-center text-[26px]">
-        気軽にディベートしてみませんか？
+        気軽にディベート
+        <br className="sm:hidden" />
+        してみませんか？
       </Heading>
       <CardLayout>
         <div>
