@@ -10,7 +10,7 @@ function Button({ children, className }: ButtonProps) {
   return (
     <button
       className={twMerge(
-        'font-bold rounded-xl py-3 outline-none bg-[#4c7e63] text-white hover:bg-[#3f6a52]',
+        'font-bold rounded-xl py-3 outline-none bg-[#4c7e63] text-white hover:bg-[#3f6a52] cursor-pointer',
         className,
       )}
     >
