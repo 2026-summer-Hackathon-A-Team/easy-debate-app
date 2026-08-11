@@ -4,7 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -12,44 +12,44 @@ datasource db {
   provider = "mysql"
 }
 
-model Users {
-  id              Int               @id  @default(autoincrement())
-  userName        String            @map("user_name")  @db.VarChar(20)
-  passwordHash    String            @map("password_hash")  @db.VarChar(255)
-  streakCount     Int               @map("streak_count")  @default(0)
-  rate            Int               @default(1000)                      // 最小値(0)、最大値(9999)をschema.prisma側で設定できない為、「migration.sql」に直接記載。（CHECK制約）
-  moralScore      Int               @map("moral_score")  @default(1000) // 最小値(0)、最大値(9999)をschema.prisma側で設定できない為、「migration.sql」に直接記載。（CHECK制約）
-  deleteMarker    Int               @map("delete_marker")  @default(0)
-  deletedAt       DateTime?         @map("deleted_at")
-  createdAt       DateTime          @map("created_at")  @default(now())
-  loginSessions   LoginSession[]
-  battleHistory   BattleHistory[]
+model User {
+  id               Int               @id  @default(autoincrement())
+  userName         String            @map("user_name")  @db.VarChar(20)
+  passwordHash     String            @map("password_hash")  @db.VarChar(255)
+  streakCount      Int               @map("streak_count")  @default(0)
+  rate             Int               @default(1000)
+  moralScore       Int               @map("moral_score")  @default(1000)
+  deleteMarker     Int               @map("delete_marker")  @default(0)
+  deletedAt        DateTime?         @map("deleted_at")
+  createdAt        DateTime          @map("created_at")  @default(now())
+  loginSessions    LoginSession[]
+  battleHistories  BattleHistory[]
 
-  @@unique([userName,deleteMarker])
-  @@map("users")
+  @@unique([userName, deleteMarker])
+  @@map("user")
 }
 
 model LoginSession {
   sessionIdHash  String    @map("session_id_hash")  @id @db.Char(64)
-  usersId        Int       @map("users_id")
+  userId         Int       @map("user_id")
   createdAt      DateTime  @map("created_at") @default(now())
   lastLoginAt    DateTime  @map("last_login_at") @default(now())
-  users          Users     @relation(fields: [usersId], references: [id])
+  user           User      @relation(fields: [userId], references: [id])
 
   @@map("login_session")
 }
 
 model BattleHistory {
   id                      String                 @db.Char(36)
-  usersId                 Int                    @map("users_id")
+  userId                  Int                    @map("user_id")
   winnerFlag              Boolean                @map("winner_flag")
   matchedAt               DateTime               @map("matched_at") @default(now())
-  users                   Users                  @relation(fields: [usersId], references: [id])
+  user                    User                   @relation(fields: [userId], references: [id])
   rateUpdownHistory       RateUpdownHistory?
   moralUpdownHistory      MoralUpdownHistory?
-  moralViolationsHistory  MoralViolationHistory?
+  moralViolationHistory   MoralViolationHistory?
 
-  @@id([id, usersId])
+  @@id([id, userId])
   @@map("battle_history")
 }
 
@@ -58,7 +58,7 @@ model RateUpdownHistory {
   battleHistoryId    String          @map("battle_history_id")  @db.Char(36)
   userId             Int             @map("user_id")
   rateUpdown         Int             @map("rate_updown")
-  battleHistory      BattleHistory   @relation(fields: [battleHistoryId,userId], references: [id,usersId])
+  battleHistory      BattleHistory   @relation(fields: [battleHistoryId, userId], references: [id, userId])
 
   @@unique([battleHistoryId, userId])
   @@map("rate_updown_history")
@@ -69,7 +69,7 @@ model MoralUpdownHistory {
   battleHistoryId     String          @map("battle_history_id")  @db.Char(36)
   userId              Int             @map("user_id")
   moralScoreUpdown    Int             @map("moral_score_updown")
-  battleHistory       BattleHistory   @relation(fields: [battleHistoryId,userId], references: [id,usersId])
+  battleHistory       BattleHistory   @relation(fields: [battleHistoryId, userId], references: [id, userId])
 
   @@unique([battleHistoryId, userId])
   @@map("moral_updown_history")
@@ -81,7 +81,7 @@ model MoralViolationHistory {
   userId                       Int                       @map("user_id")
   moralViolationCategoryId     Int                       @map("moral_violation_category_id")
   moralViolationReason         String                    @map("moral_violation_reason")  @db.VarChar(200)
-  battleHistory                BattleHistory             @relation(fields: [battleHistoryId,userId], references: [id,usersId])
+  battleHistory                BattleHistory             @relation(fields: [battleHistoryId, userId], references: [id, userId])
   moralViolationCategory       MoralViolationCategory    @relation(fields: [moralViolationCategoryId], references: [id])
 
   @@unique([battleHistoryId, userId])
