@@ -94,3 +94,8 @@ ALTER TABLE `moral_violation_history` ADD CONSTRAINT `moral_violation_history_ba
 
 -- AddForeignKey
 ALTER TABLE `moral_violation_history` ADD CONSTRAINT `moral_violation_history_moral_violation_category_id_fkey` FOREIGN KEY (`moral_violation_category_id`) REFERENCES `moral_violation_category`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- userテーブル「レート」「モラルスコア」のCHECK制約を記載
+ALTER TABLE `users`
+    ADD CONSTRAINT `chk_users_rate` CHECK (`rate` BETWEEN 0 AND 9999),
+    ADD CONSTRAINT `chk_users_moral_score` CHECK (`moral_score` BETWEEN 0 AND 9999);
