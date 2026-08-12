@@ -12,11 +12,11 @@ COPY package*.json .
 # パッケージインストール(package-lock.json)
 RUN npm ci
 
-# Prisma clientの生成
-CMD ["npx", "prisma", "generate"]
-
 # パッケージ関係以外のソースをコピー
 COPY . .
+
+# Prisma clientの生成
+RUN ["npx", "prisma", "generate"]
 
 # ポート番号3000(Honoデフォルトポート番号)
 EXPOSE 3000
@@ -63,7 +63,8 @@ RUN npm ci --omit=dev
 
 # ビルドされたファイルをコピー(本番環境)
 COPY --from=builder  /backend/dist ./dist
-
+COPY --from=builder  /backend/prisma ./prisma
+COPY --from=builder  /backend/prisma.config.ts ./
 
 # ポート番号3000(Honoデフォルトポート番号)
 EXPOSE 3000
