@@ -1,14 +1,27 @@
-import type { LoginStatus } from '../stores/authAtom';
+import type { LoginStatus } from '../types/auth';
 import ApiError from './apiError';
+import { client } from './client';
+
+// TODO: バックエンドに/api/v1/auth/session が実装され AppType に反映されたら、
+// client.api.v1.auth.session.$get() をそのまま使う
+// as unknown as AuthClientも削除する
+type AuthClient = {
+  api: {
+    v1: {
+      auth: {
+        session: {
+          $get: () => Promise<Response>;
+        };
+      };
+    };
+  };
+};
 
 // サーバーに現在のセッションが有効かどうかを問い合わせる。
 // 204(セッションあり)/401(セッションなし)はどちらも正常な結果として扱い、
 // それ以外のステータスコードの場合のみ想定外のエラーとして throw する。
 async function checkSession(): Promise<LoginStatus> {
-  const response = await fetch('http://localhost:3000/api/v1/auth/session', {
-    method: 'GET',
-    credentials: 'include',
-  });
+  const response = await (client as unknown as AuthClient).api.v1.auth.session.$get();
 
   if (response.status === 204) {
     return 'loggedIn';

@@ -36,11 +36,12 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/username" element={<NameChangePage />} />
         <Route path="/profile/password" element={<PasswordChangePage />} />
-        <Route path="/404" element={<NotFoundPage />} />
-        <Route path="/500" element={<InternalServerErrorPage />} />
-
-        <Route path="*" element={<Navigate to="/404" replace />} />
       </Route>
+
+      <Route path="/404" element={<NotFoundPage />} />
+      <Route path="/500" element={<InternalServerErrorPage />} />
+
+      <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
   );
 }

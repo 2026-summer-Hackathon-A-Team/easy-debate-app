@@ -4,7 +4,7 @@ function MatchingPage() {
   return (
     <>
       <div className="flex flex-col items-center mt-5">
-        <div className="h-18 w-18 animate-spin rounded-full border-6 border-[#cfe1d6] border-t-[#4c7e63]" />
+        <div className="h-16 w-16 animate-spin rounded-full border-5 border-[#cfe1d6] border-t-[#4c7e63]" />
         <Heading level={1} className="mt-5">
           対戦相手を探しています...
         </Heading>

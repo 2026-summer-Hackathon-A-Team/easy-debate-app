@@ -7,12 +7,15 @@ function TopicSelectionPage() {
     <>
       <CardLayout>
         <div className="flex flex-col items-center">
-          <Heading level={3} className="font-body font-bold text-[#2c4d3b]">
+          <Heading level={3} className="font-body font-bold text-[#4c7e63]">
             お題選定
           </Heading>
-          <div className="mt-3 rounded-3xl bg-[#e8f0eb] p-3">
-            <div className="text-[#2c4d3b] font-body font-extrabold">
-              回答期限　１２０秒
+          <div className="grid grid-cols-2 justify-items-center items-center mt-3 rounded-3xl bg-[#e8f0eb] p-3">
+            <div className="text-[12px] text-[#2c4d3b] font-body font-bold">
+              回答期限
+            </div>
+            <div className="text-[14px] text-[#2c4d3b] font-body font-extrabold">
+              120秒
             </div>
           </div>
           <Heading level={1} className="mt-3">
@@ -31,7 +34,9 @@ function TopicSelectionPage() {
             level={3}
             className="col-span-2 text-center text-gray-400 font-normal mt-1"
           >
-            ※両者がチェンジを希望した際にチェンジされます
+            ※両者がチェンジを希望した際に
+            <br className="sm:hidden" />
+            チェンジされます
           </Heading>
         </div>
       </CardLayout>

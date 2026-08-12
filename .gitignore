@@ -41,6 +41,7 @@ Desktop.ini
 .env*
 !.env.example
 !.env.local
+!.env.development
 
 # prisma
 backend/src/generated/prisma

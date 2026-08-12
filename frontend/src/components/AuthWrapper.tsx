@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 
 import { checkSession } from '../api/authApi';
 import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
-import { loginStatusAtom, userInfoAtom } from '../stores/authAtom';
+import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
 
 // ログインしていなくてもアクセスできるページ
-const publicPaths = ['/signin', '/signup', '/404', '/500'];
+const publicPaths = ['/signin', '/signup'];
 
 function AuthWrapper() {
   const location = useLocation();
@@ -18,9 +18,7 @@ function AuthWrapper() {
   const [loginStatus, setLoginStatus] = useAtom(loginStatusAtom);
 
   // ログインユーザーの情報(未取得の間は null)
-  const userInfo = useAtomValue(userInfoAtom);
-
-  const setUserInfo = useSetAtom(userInfoAtom);
+  const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
   // 現在のパスが「未ログインでも見られるページ」かどうか
   const isPublicPage = publicPaths.includes(location.pathname);
@@ -37,7 +35,7 @@ function AuthWrapper() {
 
         setLoginStatus(status);
       } catch {
-        // API実装後はこちらを使う(セッション確認自体に失敗した場合はエラーページへ)
+        // TODO: API実装後はこちらを使う(セッション確認自体に失敗した場合はエラーページへ)
         // navigate('/500');
 
         // API未実装のため checkSession が必ず失敗する。
@@ -52,7 +50,7 @@ function AuthWrapper() {
 
   // 2. ログイン済みと分かったら、続けてユーザー情報を取得する
   useEffect(() => {
-    if (loginStatus !== 'loggedIn' || userInfo !== null) {
+    if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
     }
 
@@ -69,7 +67,8 @@ function AuthWrapper() {
           return;
         }
 
-        // API実装後はこちらを使う(それ以外のエラーは想定外のためエラーページへ)
+        // TODO: API実装後はこちらを使う(それ以外のエラーは想定外のためエラーページへ,ログインチェックも未確認に変更)
+        // setLoginStatus('unchecked')
         // navigate('/500');
 
         // API未実装のため getUserInfo が必ず失敗する。
