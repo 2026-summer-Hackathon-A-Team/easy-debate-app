@@ -12,4 +12,4 @@ if (!corsOrigins) {
  */
 export const CORS_ORIGINS = corsOrigins
   .split(',')
-  .map((origin) => origin.trim());
+  .map((origin: string) => origin.trim());
