@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const registerUserQuerySchema = z.object({
+/**
+ * ユーザー新規登録スキーマ
+ * @remarks
+ * ユーザー名・パスワードのバリデーション
+ */
+export const registerUserBodySchema = z.object({
   userName: z
     .string()
     .min(6)
