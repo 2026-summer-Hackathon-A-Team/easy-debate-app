@@ -27,6 +27,8 @@ services:
       - DEBUG=${DEBUG}
       # PORT
       - PORT=${PORT}
+      # シャドウDB用URL
+      - SHADOW_DATABASE_URL=${SHADOW_DATABASE_URL}
       # DBの接続先情報
       - DATABASE_URL=${DATABASE_URL}
       # CORSの許可するオリジン
@@ -34,10 +36,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      ports:
-        - '3000:3000'
+    ports:
+      - '3000:3000'
         # prisma studioのブラウザポート番号
-        - '51212:51212'
+      - '51212:51212'
 
   # dbコンテナ
   db:
@@ -50,6 +52,7 @@ services:
       TZ: 'Asia/Tokyo'
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./backend/prisma/sql/local-init.sql:/docker-entrypoint-initdb.d/local-init.sql:ro
     healthcheck:
       # ヘルスチェック実行コマンド
       test:
