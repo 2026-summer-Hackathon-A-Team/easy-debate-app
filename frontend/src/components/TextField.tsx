@@ -25,3 +25,4 @@ function TextField({ className, type = 'text', ...props }: TextFieldProps) {
 }
 
 export default TextField;
+export type { TextFieldProps };

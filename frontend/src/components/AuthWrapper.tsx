@@ -23,7 +23,7 @@ function AuthWrapper() {
   // 現在のパスが「未ログインでも見られるページ」かどうか
   const isPublicPage = publicPaths.includes(location.pathname);
 
-  // 1. マウント時に一度だけセッションの有無をサーバーに確認し、loginStatus を確定させる
+  // 1. マウント時に一度だけセッションの有無をサーバーに確認しloginStatusを確定させる
   useEffect(() => {
     if (loginStatus !== 'unchecked') {
       return;
@@ -38,10 +38,10 @@ function AuthWrapper() {
         // TODO: API実装後はこちらを使う(セッション確認自体に失敗した場合はエラーページへ)
         // navigate('/500');
 
-        // API未実装のため checkSession が必ず失敗する。
+        // API未実装のためcheckSessionが必ず失敗する。
         // /500 に飛ばされ続けて開発が進まないため、一旦ここでログイン済み・未ログインの扱いにしている。
-        // API実装後は削除し、上の navigate('/500') に戻す。
-        setLoginStatus('loggedIn');
+        // API実装後は削除し、上のnavigate('/500')に戻す。
+        setLoginStatus('loggedOut');
       }
     }
 

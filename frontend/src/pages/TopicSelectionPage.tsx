@@ -1,8 +1,107 @@
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { useAtomValue, useSetAtom } from 'jotai';
+
 import CardLayout from '../Layouts/CardLayout';
 import Heading from '../components/Heading';
 import Button from '../components/Button';
+import Modal from '../components/Modal';
+import { socket } from '../socket/socket';
+import { deadlineAtom, remainingSecondsAtom } from '../stores/timerAtom';
+import type { MatchComplete } from '../types/socket/matchComplete';
+import type { TopicChangeRequest } from '../types/socket/topicChangeRequest';
+import type { TopicChangeResult } from '../types/socket/topicChangeResult';
+
+// カウントダウン終了・相手離脱を検知した際に表示するモーダル。
+// opponentLeaveは「相手が離脱した」「相手が期限内に回答しなかった」の2パターン
+type Outcome =
+  | { type: 'opponentLeave'; reason: 'leave' | 'idle' }
+  | { type: 'timeUp' }
+  | null;
 
 function TopicSelectionPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const deadline = useAtomValue(deadlineAtom);
+  // 回答期限までの残り秒数。deadlineAtomを起点にSocketManagerが1秒ごとに更新する
+  const remainingSeconds = useAtomValue(remainingSecondsAtom);
+  const setDeadline = useSetAtom(deadlineAtom);
+
+  // TODO: 動作確認用。回答期限を10秒に強制する。確認が終わったら削除する
+  useEffect(() => {
+    setDeadline(new Date(Date.now() + 10_000).toISOString());
+  }, [setDeadline]);
+
+  // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateの
+  // stateで渡ってくる値。直接URLアクセス等でstateが無い場合もあるためPartialとして扱う
+  const { topic } = (location.state ?? {}) as Partial<MatchComplete>;
+
+  // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
+  const [isAnswered, setIsAnswered] = useState(false);
+  // 相手がdisconnectから20秒以内に復帰しなかったか
+  const [isOpponentLeft, setIsOpponentLeft] = useState(false);
+
+  // 両者の回答が揃った場合と、相手が離脱した場合を監視する
+  useEffect(() => {
+    function handleAnyChangeResult(data: TopicChangeResult) {
+      setDeadline(data.answerDeadline);
+      navigate('/debates/topic-confirmation', {
+        state: { topic: data.topic, isChangeTopic: data.isChangeTopic },
+      });
+    }
+
+    function handleOpponentLeave() {
+      socket.disconnect();
+      setIsOpponentLeft(true);
+    }
+
+    socket.on('topic:anyChangeResult', handleAnyChangeResult);
+    socket.on('topic:opponentLeave', handleOpponentLeave);
+
+    return () => {
+      socket.off('topic:anyChangeResult', handleAnyChangeResult);
+      socket.off('topic:opponentLeave', handleOpponentLeave);
+    };
+  }, [navigate, setDeadline]);
+
+  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
+  const isTimeUp = deadline !== null && remainingSeconds <= 0;
+
+  // 期限切れになった瞬間に一度だけSocketを破棄する
+  useEffect(() => {
+    if (isTimeUp) {
+      socket.disconnect();
+    }
+  }, [isTimeUp]);
+
+  // 期限切れ時、自分が回答済みなら「相手が期限内に回答しなかった」
+  // 未回答なら「自分の時間切れ」
+  const outcome: Outcome = isOpponentLeft
+    ? { type: 'opponentLeave', reason: 'leave' }
+    : isTimeUp
+      ? isAnswered
+        ? { type: 'opponentLeave', reason: 'idle' }
+        : { type: 'timeUp' }
+      : null;
+
+  function handleAnswer(wantChange: boolean) {
+    const payload: TopicChangeRequest = { wantChange };
+
+    socket.emit('topic:anyChangeRequest', payload);
+    setIsAnswered(true);
+  }
+
+  function handleGoToMatching() {
+    // 破棄したSocketを再接続する。connectイベントでSocketManagerがsync:requestを送り直す
+    socket.connect();
+    navigate('/debates/matching');
+  }
+
+  function handleGoToHome() {
+    navigate('/');
+  }
+
   return (
     <>
       <CardLayout>
@@ -15,24 +114,37 @@ function TopicSelectionPage() {
               回答期限
             </div>
             <div className="text-[14px] text-[#2c4d3b] font-body font-extrabold">
-              120秒
+              {remainingSeconds}秒
             </div>
           </div>
           <Heading level={1} className="mt-3">
-            お題
+            {topic}
           </Heading>
+          {isAnswered && (
+            <p className="mt-4 text-[13.5px] text-gray-400">
+              相手の回答を待っています…
+            </p>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-2 mt-8 font-bold">
-          <Heading level={3} className="col-span-2 text-center">
+        <div className="mt-10 font-bold">
+          <Heading level={3} className="text-center">
             お題チェンジ
           </Heading>
-          <Button className="bg-white hover:bg-white text-gray-500 border border-gray-300">
-            希望する
-          </Button>
-          <Button>希望しない</Button>
+          <div className="grid grid-cols-2 gap-2 mt-2.5">
+            <Button
+              className="bg-white hover:bg-white text-gray-500 border border-gray-300"
+              disabled={isAnswered}
+              onClick={() => handleAnswer(true)}
+            >
+              希望する
+            </Button>
+            <Button disabled={isAnswered} onClick={() => handleAnswer(false)}>
+              希望しない
+            </Button>
+          </div>
           <Heading
             level={3}
-            className="col-span-2 text-center text-gray-400 font-normal mt-1"
+            className="text-center text-gray-400 font-normal mt-1"
           >
             ※両者がチェンジを希望した際に
             <br className="sm:hidden" />
@@ -40,6 +152,40 @@ function TopicSelectionPage() {
           </Heading>
         </div>
       </CardLayout>
+
+      {outcome?.type === 'opponentLeave' && (
+        <Modal>
+          <Heading level={2}>
+            {outcome.reason === 'idle'
+              ? '相手が期限内に回答しませんでした'
+              : '相手が離脱しました'}
+          </Heading>
+          <p className="mt-2 text-[13.5px] text-[#8a8f89] leading-relaxed">
+            {outcome.reason === 'idle'
+              ? '相手の回答がなかったため、'
+              : '相手が離脱したため、'}
+            <br />
+            マッチング待ち画面へ戻ります。
+          </p>
+          <Button className="mt-5 w-full" onClick={handleGoToMatching}>
+            OK
+          </Button>
+        </Modal>
+      )}
+
+      {outcome?.type === 'timeUp' && (
+        <Modal>
+          <Heading level={2}>回答期限が過ぎました</Heading>
+          <p className="mt-2 text-[13.5px] text-[#8a8f89] leading-relaxed">
+            2分以内に操作が行われなかったため、
+            <br />
+            ホーム画面へ戻ります。
+          </p>
+          <Button className="mt-5 w-full" onClick={handleGoToHome}>
+            OK
+          </Button>
+        </Modal>
+      )}
     </>
   );
 }

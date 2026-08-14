@@ -14,6 +14,7 @@ import TopicConfirmationPage from './pages/TopicConfirmationPage';
 import TopicSelectionPage from './pages/TopicSelectionPage';
 import ProfilePage from './pages/ProfilePage';
 import InternalServerErrorPage from './pages/InternalServerErrorPage';
+import DebateLayout from './components/DebateWrapper';
 
 function App() {
   return (
@@ -22,17 +23,21 @@ function App() {
         <Route path="/signin" element={<SigninPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<HomePage />} />
-        <Route path="/debates/matching" element={<MatchingPage />} />
-        <Route
-          path="/debates/topic-selection"
-          element={<TopicSelectionPage />}
-        />
-        <Route
-          path="/debates/topic-confirmation"
-          element={<TopicConfirmationPage />}
-        />
-        <Route path="/debates/chat" element={<DebatePage />} />
-        <Route path="/debates/judge" element={<JudgeResultPage />} />
+
+        <Route element={<DebateLayout />}>
+          <Route path="/debates/matching" element={<MatchingPage />} />
+          <Route
+            path="/debates/topic-selection"
+            element={<TopicSelectionPage />}
+          />
+          <Route
+            path="/debates/topic-confirmation"
+            element={<TopicConfirmationPage />}
+          />
+          <Route path="/debates/chat" element={<DebatePage />} />
+          <Route path="/debates/judge" element={<JudgeResultPage />} />
+        </Route>
+
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/username" element={<NameChangePage />} />
         <Route path="/profile/password" element={<PasswordChangePage />} />
