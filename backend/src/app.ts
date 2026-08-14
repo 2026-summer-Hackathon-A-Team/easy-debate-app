@@ -20,6 +20,9 @@ export const app = new Hono()
 
     return c.text(`Hello, ${name}!`);
   })
+  /**
+   * 新規登録・退会・ユーザー情報取得・ユーザー名、パスワード変更処理へ
+   */
   .route('/api/v1/users', users)
 
   .onError((err, c) => {
@@ -30,7 +33,12 @@ export const app = new Hono()
     console.error(JSON.stringify(logObj(err, c)));
     return c.json({ errorMsg: '予期せぬエラーが発生しました。' }, 500);
   });
-
+/**
+ * ログ出力用のオブジェクトを生成する関数
+ * @param err エラーオブジェクト
+ * @param c Honoのコンテキストオブジェクト
+ * @returns ログ出力用のオブジェクト
+ */
 const logObj = (err: Error, c: any) => {
   const level =
     err instanceof HTTPException && err.status < 500 ? 'warn' : 'error';
