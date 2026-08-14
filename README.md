@@ -19,7 +19,7 @@
 
 1. コンテナをビルド&起動
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+   docker compose up -d --build
    ```
 
 ### コンテナ停止
@@ -27,12 +27,12 @@
 1. MySQLのデータを残したい場合
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml down
+   docker compose down
    ```
 
 2. MySQLのデータを削除したい場合
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
+   docker compose down -v
    ```
 
 ### DB設定

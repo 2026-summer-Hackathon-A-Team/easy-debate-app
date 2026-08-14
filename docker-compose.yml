@@ -1,16 +1,75 @@
 services:
+  # frontendコンテナ
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+
   # backendコンテナ
   backend:
+    # backendコンテナのdevelopmentステージを指定してビルドする
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./backend:/backend
+      - /backend/node_modules
     environment:
+      # prismaデバッグモード
+      - DEBUG=${DEBUG}
+      # PORT
+      - PORT=${PORT}
       # DBの接続先情報
       - DATABASE_URL=${DATABASE_URL}
       # CORSの許可するオリジン
       - CORS_ORIGINS=${CORS_ORIGINS}
+    depends_on:
+      db:
+        condition: service_healthy
+      ports:
+        - '3000:3000'
+        # prisma studioのブラウザポート番号
+        - '51212:51212'
 
+  # dbコンテナ
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # ヘルスチェック実行コマンド
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u${DB_USER}',
+          '-p${DB_PASSWORD}',
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # MySQLを文字コードutf8mb4に設定して起動
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - '3000:3000'
-      # prisma studioのブラウザポート番号
-      - '51212:51212'
+      - '3306:3306'
+
+volumes:
+  mysql_data:
