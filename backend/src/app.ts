@@ -26,11 +26,14 @@ export const app = new Hono()
   .route('/api/v1/users', users)
 
   .onError((err, c) => {
+    const logData = logObj(err, c);
+    const log = JSON.stringify(logData);
+    // logObj生成時、判定したlevelを見て`console.error`と`console.warn`を切り替える
+    logData.level === 'warn' ? console.warn(log) : console.error(log);
+    // HTTPExceptionで投げられていないエラーは500
     if (err instanceof HTTPException) {
-      console.warn(JSON.stringify(logObj(err, c)));
       return c.json({ errorMsg: err.message }, err.status);
     }
-    console.error(JSON.stringify(logObj(err, c)));
     return c.json({ errorMsg: '予期せぬエラーが発生しました。' }, 500);
   });
 /**
