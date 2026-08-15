@@ -22,10 +22,24 @@ function useCountdownTimer() {
       return;
     }
 
-    setRemainingSeconds(getRemainingSeconds(deadline));
+    const initialRemaining = getRemainingSeconds(deadline);
+
+    setRemainingSeconds(initialRemaining);
+
+    // 既に期限を過ぎている場合はタイマーを開始しない
+    if (initialRemaining <= 0) {
+      return;
+    }
 
     const timerId = setInterval(() => {
-      setRemainingSeconds(getRemainingSeconds(deadline));
+      const remaining = getRemainingSeconds(deadline);
+
+      setRemainingSeconds(remaining);
+
+      // 0になったらタイマーを止める
+      if (remaining <= 0) {
+        clearInterval(timerId);
+      }
     }, 1000);
 
     return () => clearInterval(timerId);

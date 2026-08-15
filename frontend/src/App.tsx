@@ -14,7 +14,7 @@ import TopicConfirmationPage from './pages/TopicConfirmationPage';
 import TopicSelectionPage from './pages/TopicSelectionPage';
 import ProfilePage from './pages/ProfilePage';
 import InternalServerErrorPage from './pages/InternalServerErrorPage';
-import DebateLayout from './components/DebateWrapper';
+import SocketManager from './socket/socketManager';
 
 function App() {
   return (
@@ -24,7 +24,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<HomePage />} />
 
-        <Route element={<DebateLayout />}>
+        <Route element={<SocketManager />}>
           <Route path="/debates/matching" element={<MatchingPage />} />
           <Route
             path="/debates/topic-selection"

@@ -1,7 +1,10 @@
+// sync:result イベントを定義するファイル。
+// 各フェーズで共有するサブタイプはcommon.tsxを参照する
+
 import type {
   ChatHistoryItem,
   Judge,
-  SyncUser,
+  JoinUser,
   ThanksHistoryItem,
   TurnInfo,
   Violation,
@@ -25,7 +28,7 @@ type DebateReadySyncResult = {
   phase: 'DEBATE_READY';
   isChangeTopic: boolean;
   topic: string;
-  users: [SyncUser, SyncUser];
+  users: [JoinUser, JoinUser];
   answerDeadline: string;
   isAnswered: boolean;
 };
@@ -34,7 +37,7 @@ type DebateReadySyncResult = {
 type DebateSyncResult = {
   phase: 'DEBATE';
   topic: string;
-  users: [SyncUser, SyncUser];
+  users: [JoinUser, JoinUser];
   turn: TurnInfo;
   chatSubmitDeadline: string;
   chatHistory: ChatHistoryItem[];
@@ -44,7 +47,7 @@ type DebateSyncResult = {
 type JudgeWaitingSyncResult = {
   phase: 'JUDGE_WAITING';
   topic: string;
-  users: [SyncUser, SyncUser];
+  users: [JoinUser, JoinUser];
   turn: TurnInfo;
   chatHistory: ChatHistoryItem[];
   judge?: Judge;

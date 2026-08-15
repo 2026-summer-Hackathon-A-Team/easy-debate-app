@@ -1,15 +1,12 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { useSetAtom } from 'jotai';
+import { Outlet, useNavigate } from 'react-router';
 
 import { socket } from './socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
-import { deadlineAtom } from '../stores/timerAtom';
 import type { SyncResult } from '../types/sync/syncResult';
 
 function SocketManager() {
   const navigate = useNavigate();
-  const setDeadline = useSetAtom(deadlineAtom);
 
   // deadlineAtomの残り秒数カウントダウンを常時走らせておく
   useCountdownTimer();
@@ -19,18 +16,16 @@ function SocketManager() {
       socket.emit('sync:request');
     }
 
+    // 画面固有の処理（setDeadline等）はここでは行わず、遷移先の画面の初期処理に任せる
     function handleSyncResult(data: SyncResult) {
       if (data.phase === 'MATCHING') {
-        setDeadline(null);
-        socket.emit('match:standby');
         navigate('/debates/matching');
         return;
       }
 
       if (data.phase === 'TOPIC_CHANGE') {
-        setDeadline(data.answerDeadline);
         navigate('/debates/topic-selection', {
-          state: { topic: data.topic },
+          state: { topic: data.topic, answerDeadline: data.answerDeadline },
         });
       }
     }
@@ -38,15 +33,14 @@ function SocketManager() {
     socket.on('connect', handleConnect);
     socket.on('sync:result', handleSyncResult);
 
-    socket.connect();
-
     return () => {
       socket.off('connect', handleConnect);
       socket.off('sync:result', handleSyncResult);
+      socket.disconnect();
     };
-  }, [navigate, setDeadline]);
+  }, [navigate]);
 
-  return null;
+  return <Outlet />;
 }
 
 export default SocketManager;

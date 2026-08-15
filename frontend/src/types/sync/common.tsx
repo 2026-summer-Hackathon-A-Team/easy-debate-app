@@ -1,3 +1,6 @@
+// sync:result の各フェーズ共通で使い回すサブタイプ置き場。
+// フェーズごとの形はsyncResult.tsxで定義する
+
 type Phase =
   | 'MATCHING'
   | 'TOPIC_CHANGE'
@@ -7,7 +10,7 @@ type Phase =
   | 'JUDGE';
 
 // 参加ユーザー
-type SyncUser = {
+type JoinUser = {
   userId: number;
   position: string;
   turn?: 'FIRST' | 'SECOND';
@@ -66,7 +69,7 @@ type Violation = {
 
 export type {
   Phase,
-  SyncUser,
+  JoinUser,
   TurnInfo,
   ChatHistoryItem,
   ThanksHistoryItem,

@@ -1,5 +1,5 @@
 type TopicChangeRequest = {
-  wantChange: boolean;
+  isHopeChangeTopic: boolean;
 };
 
 export type { TopicChangeRequest };

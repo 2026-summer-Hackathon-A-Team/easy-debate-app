@@ -40,8 +40,8 @@ function AuthWrapper() {
 
         // API未実装のためcheckSessionが必ず失敗する。
         // /500 に飛ばされ続けて開発が進まないため、一旦ここでログイン済み・未ログインの扱いにしている。
-        // API実装後は削除し、上のnavigate('/500')に戻す。
-        setLoginStatus('loggedOut');
+        // TODO: API実装後は削除し、上のnavigate('/500')に戻す。
+        setLoginStatus('loggedIn');
       }
     }
 
@@ -73,7 +73,7 @@ function AuthWrapper() {
 
         // API未実装のため getUserInfo が必ず失敗する。
         // /500 に飛ばされ続けて開発が進まないため、一旦ダミーのユーザー情報をセットしている。
-        // API実装後は削除し、上の navigate('/500') に戻す。
+        // TODO: API実装後は削除し、上の navigate('/500') に戻す。
         setUserInfo({ userId: 0, userName: 'dummy', rate: 1500 });
       }
     }

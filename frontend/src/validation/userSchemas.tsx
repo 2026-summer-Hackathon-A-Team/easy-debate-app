@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ユーザー名: 6〜20文字の英数字
-const usernameSchema = z
+const userNameSchema = z
   .string()
   .min(6)
   .max(20)
@@ -14,4 +14,4 @@ const passwordSchema = z
   .max(64)
   .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/);
 
-export { usernameSchema, passwordSchema };
+export { userNameSchema, passwordSchema };

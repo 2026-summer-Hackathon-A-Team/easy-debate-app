@@ -2,38 +2,40 @@ import Heading from '../components/Heading';
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useSetAtom } from 'jotai';
 
 import { socket } from '../socket/socket';
-import { deadlineAtom } from '../stores/timerAtom';
 import type { MatchComplete } from '../types/socket/matchComplete';
 
 function MatchingPage() {
   const navigate = useNavigate();
-  const setDeadline = useSetAtom(deadlineAtom);
 
   useEffect(() => {
     function handleMatchFound() {
       socket.emit('match:isConfirm');
     }
 
-    // 両者がマッチングを確認できたら、仮のお題を渡してお題選定画面へ遷移する。
-    // 回答期限はdeadlineAtomにセットし、TopicSelectionPage側でカウントダウン表示する
+    // 両者がマッチングを確認できたら、仮のお題と回答期限を渡してお題選定画面へ遷移する。
+    // カウントダウンの開始は遷移先で初期処理で行う
     function handleMatchComplete({ topic, answerDeadline }: MatchComplete) {
-      setDeadline(answerDeadline);
       navigate('/debates/topic-selection', {
-        state: { topic },
+        state: { topic, answerDeadline },
       });
     }
 
+    // 破棄されている場合に備えて再接続する
+    socket.connect();
+
     socket.on('match:isFound', handleMatchFound);
     socket.on('match:complete', handleMatchComplete);
+
+    // 受け口を用意してからマッチング待ちをリクエストする
+    socket.emit('match:standby');
 
     return () => {
       socket.off('match:isFound', handleMatchFound);
       socket.off('match:complete', handleMatchComplete);
     };
-  }, [navigate, setDeadline]);
+  }, [navigate]);
 
   return (
     <>

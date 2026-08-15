@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 
 import CardLayout from '../Layouts/CardLayout';
 import Heading from '../components/Heading';
@@ -23,31 +23,48 @@ function TopicSelectionPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const deadline = useAtomValue(deadlineAtom);
+  const [deadline, setDeadline] = useAtom(deadlineAtom);
   // 回答期限までの残り秒数。deadlineAtomを起点にSocketManagerが1秒ごとに更新する
   const remainingSeconds = useAtomValue(remainingSecondsAtom);
-  const setDeadline = useSetAtom(deadlineAtom);
 
-  // TODO: 動作確認用。回答期限を10秒に強制する。確認が終わったら削除する
-  useEffect(() => {
-    setDeadline(new Date(Date.now() + 10_000).toISOString());
-  }, [setDeadline]);
+  // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
+  // 画面リロード時もこの導線を通るため、直接URLアクセス（stateが無い場合）は不正アクセスとして扱う
+  // TODO: 動作確認用のフォールバックを削除したら、以下の本来のコードに戻す
+  // const { topic, answerDeadline } = location.state as MatchComplete;
 
-  // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateの
-  // stateで渡ってくる値。直接URLアクセス等でstateが無い場合もあるためPartialとして扱う
-  const { topic } = (location.state ?? {}) as Partial<MatchComplete>;
+  // TODO: 動作確認用。バックエンド未実装で正規の導線を通れないため、
+  // stateが無い場合のみ仮の値で補っている。確認が終わったら上のコメントアウトを外し、この下を削除する
+  const [fallbackState] = useState<MatchComplete>(() => ({
+    topic: '仮のお題',
+    answerDeadline: new Date(Date.now() + 10_000).toISOString(),
+  }));
+  const { topic, answerDeadline } =
+    (location.state as MatchComplete | null) ?? fallbackState;
 
   // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
   const [isAnswered, setIsAnswered] = useState(false);
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
-  // 両者の回答が揃った場合と、相手が離脱した場合を監視する
+  // 遷移時に渡された回答期限でカウントダウンを開始する
+  useEffect(() => {
+    setDeadline(answerDeadline);
+  }, [answerDeadline, setDeadline]);
+
+  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
+  const isTimeUp = deadline !== null && remainingSeconds <= 0;
+
+  // 両者の回答が揃った場合・相手が離脱した場合・期限切れの場合をまとめて監視する
   useEffect(() => {
     function handleAnyChangeResult(data: TopicChangeResult) {
-      setDeadline(data.answerDeadline);
+      // カウントダウンの開始（setDeadline）は遷移先のTopicConfirmationPageの初期処理で行う
       navigate('/debates/topic-confirmation', {
-        state: { topic: data.topic, isChangeTopic: data.isChangeTopic },
+        state: {
+          topic: data.topic,
+          isChangeTopic: data.isChangeTopic,
+          answerDeadline: data.answerDeadline,
+          users: data.users,
+        },
       });
     }
 
@@ -59,21 +76,16 @@ function TopicSelectionPage() {
     socket.on('topic:anyChangeResult', handleAnyChangeResult);
     socket.on('topic:opponentLeave', handleOpponentLeave);
 
+    // 期限切れになった瞬間にSocketを破棄する
+    if (isTimeUp) {
+      socket.disconnect();
+    }
+
     return () => {
       socket.off('topic:anyChangeResult', handleAnyChangeResult);
       socket.off('topic:opponentLeave', handleOpponentLeave);
     };
-  }, [navigate, setDeadline]);
-
-  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
-  const isTimeUp = deadline !== null && remainingSeconds <= 0;
-
-  // 期限切れになった瞬間に一度だけSocketを破棄する
-  useEffect(() => {
-    if (isTimeUp) {
-      socket.disconnect();
-    }
-  }, [isTimeUp]);
+  }, [navigate, isTimeUp]);
 
   // 期限切れ時、自分が回答済みなら「相手が期限内に回答しなかった」
   // 未回答なら「自分の時間切れ」
@@ -85,16 +97,14 @@ function TopicSelectionPage() {
         : { type: 'timeUp' }
       : null;
 
-  function handleAnswer(wantChange: boolean) {
-    const payload: TopicChangeRequest = { wantChange };
+  function handleAnswer(isHopeChangeTopic: boolean) {
+    const payload: TopicChangeRequest = { isHopeChangeTopic };
 
     socket.emit('topic:anyChangeRequest', payload);
     setIsAnswered(true);
   }
 
   function handleGoToMatching() {
-    // 破棄したSocketを再接続する。connectイベントでSocketManagerがsync:requestを送り直す
-    socket.connect();
     navigate('/debates/matching');
   }
 
@@ -144,7 +154,7 @@ function TopicSelectionPage() {
           </div>
           <Heading
             level={3}
-            className="text-center text-gray-400 font-normal mt-1"
+            className="text-center text-gray-400 font-normal mt-3"
           >
             ※両者がチェンジを希望した際に
             <br className="sm:hidden" />

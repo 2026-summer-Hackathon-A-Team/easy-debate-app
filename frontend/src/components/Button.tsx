@@ -4,9 +4,9 @@ import { twMerge } from 'tailwind-merge';
 type ButtonProps = {
   children: ReactNode;
   className?: string;
-  onClick?: MouseEventHandler<HTMLButtonElement>;
+  onClick: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
-  type?: 'button' | 'submit' | 'reset';
+  type?: 'button' | 'submit';
 };
 
 function Button({ children, className, ...buttonProps }: ButtonProps) {

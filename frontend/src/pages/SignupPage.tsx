@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import ValidatedTextField from '../components/ValidatedTextField';
 import ApiError from '../api/apiError';
 import { registerUser } from '../api/userApi';
-import { usernameSchema, passwordSchema } from '../validation/userSchemas';
+import { userNameSchema, passwordSchema } from '../validation/userSchemas';
 
 type ModalState = 'success' | 'validationError' | 'duplicateError' | null;
 
@@ -22,9 +22,9 @@ function SignupPage() {
   const [modal, setModal] = useState<ModalState>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const isUsernameValid = usernameSchema.safeParse(userName).success;
+  const isUserNameValid = userNameSchema.safeParse(userName).success;
   const isPasswordValid = passwordSchema.safeParse(password).success;
-  const canSubmit = isUsernameValid && isPasswordValid && !isSubmitting;
+  const canSubmit = isUserNameValid && isPasswordValid && !isSubmitting;
 
   async function handleSubmit() {
     if (!canSubmit) {
@@ -83,7 +83,7 @@ function SignupPage() {
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
           errorMessage={
-            userName !== '' && !isUsernameValid
+            userName !== '' && !isUserNameValid
               ? 'ユーザー名は6〜20文字の英数字で入力してください'
               : undefined
           }

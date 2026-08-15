@@ -1,7 +1,14 @@
-type TopicChangeResult = {
-  topic: string;
-  isChangeTopic: boolean;
-  answerDeadline: string;
+type TopicChangeResultUser = {
+  userId: number;
+  position: string;
+  turn: 'FIRST' | 'SECOND';
 };
 
-export type { TopicChangeResult };
+type TopicChangeResult = {
+  isChangeTopic: boolean;
+  topic: string;
+  answerDeadline: string;
+  users: [TopicChangeResultUser, TopicChangeResultUser];
+};
+
+export type { TopicChangeResult, TopicChangeResultUser };
