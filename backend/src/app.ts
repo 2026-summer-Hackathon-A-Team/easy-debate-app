@@ -10,6 +10,7 @@ export const app = new Hono()
     '*',
     cors({
       origin: CORS_ORIGINS,
+      credentials: true,
     }),
   )
   .get('/health', (c) => {
