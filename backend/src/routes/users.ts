@@ -14,7 +14,7 @@ export const users = new Hono()
    */
   .post(
     '/',
-    zValidator('json', registerUserBodySchema, (result) => {
+    zValidator('json', registerUserBodySchema, (result, _c) => {
       if (!result.success) {
         throw new HTTPException(400, {
           message: '入力内容に誤りがあります。',
