@@ -19,7 +19,7 @@
 
 1. コンテナをビルド&起動
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+   docker compose up -d --build
    ```
 
 ### コンテナ停止
@@ -27,12 +27,12 @@
 1. MySQLのデータを残したい場合
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml down
+   docker compose down
    ```
 
 2. MySQLのデータを削除したい場合
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
+   docker compose down -v
    ```
 
 ### DB設定
@@ -40,12 +40,12 @@
 - Prismaスキーマの内容をDBに反映
 
   ```sh
-  docker compose exec backend sh -c 'npx prisma db push && npx prisma generate'
+  docker compose exec backend sh -c 'npx prisma migrate dev && npx prisma generate'
   ```
 
 - 開発用DBを初期化して、Prismaスキーマの内容を再反映
   ```sh
-  docker compose exec backend sh -c 'npx prisma db push --force-reset && npx prisma generate'
+  docker compose exec backend sh -c 'npx prisma migrate reset --force && npx prisma generate'
   ```
 
 ### DBの確認(Prisma Studioを使用)
@@ -53,7 +53,7 @@
 1. 以下のコマンドを実行しPrisma Studioを起動
 
    ```sh
-   docker compose exec backend npx prisma studio --port 51212 --hostname 0.0.0.0 --browser none
+   docker compose exec backend npx prisma studio --port 51212 --browser none
    ```
 
 2. ブラウザで `http://localhost:51212` へアクセス

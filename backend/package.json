@@ -1,6 +1,9 @@
 {
   "name": "backend",
   "type": "module",
+  "prisma": {
+    "schema": "./prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
