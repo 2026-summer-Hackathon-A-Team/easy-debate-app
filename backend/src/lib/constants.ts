@@ -14,3 +14,10 @@ export const PRISMA_ERROR_CODE = {
    */
   UNIQUE_CONSTRAINT_FAILED: 'P2002',
 } as const;
+
+/**
+ * ユーザー未存在時（パスワードなし）のタイミング差を埋めるためのダミーハッシュ。
+ * 秘密情報ではない（比較結果は必ず不一致）
+ */
+export const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=65536,t=4,p=3$f1eZ0Q/D8ujIWpX8zFPN3Q$iLElFLzaebEqp+C0sVE2iaPaM1nsSKYgH6uBE1EYofu8NsdzP08nM6sY9C0RxT8gxuDqV1S9cLa2aoEo+35KuQ';
