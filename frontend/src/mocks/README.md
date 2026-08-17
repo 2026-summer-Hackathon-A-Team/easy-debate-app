@@ -78,9 +78,9 @@ src/mocks/
 │   └── index.tsx                    endpoint/ の一覧（登録するだけ）
 ├── socket/                        ★ WebSocket
 │   ├── endpoint/                    イベントごとに1ファイル
-│   │   ├── sync:request.tsx           sync:request
-│   │   ├── match:standby.tsx          match:standby
-│   │   ├── match:isConfirm.tsx        match:isConfirm
+│   │   ├── sync_request.tsx           sync:request
+│   │   ├── match_standby.tsx          match:standby
+│   │   ├── match_isConfirm.tsx        match:isConfirm
 │   │   └── ...
 │   ├── settings.tsx                 共通の値
 │   └── index.tsx                    endpoint/ の一覧（登録するだけ）
@@ -100,7 +100,7 @@ src/mocks/
 | 対象   | ルール                                                | 例                                                               |
 | ------ | ----------------------------------------------------- | ---------------------------------------------------------------- |
 | REST   | HTTPメソッド + URL を `_` で繋ぐ（先頭の `/` は省略） | `GET /api/v1/users/me` → `rest/endpoint/get_api_v1_users_me.tsx` |
-| socket | イベント名をそのまま使う（`:` も残す）                | `match:standby` → `socket/endpoint/match:standby.tsx`            |
+| socket | イベント名の `:` を `_` に置き換える                  | `match:standby` → `socket/endpoint/match_standby.tsx`            |
 
 ---
 
