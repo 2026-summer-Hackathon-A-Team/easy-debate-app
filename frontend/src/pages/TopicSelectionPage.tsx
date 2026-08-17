@@ -46,15 +46,15 @@ function TopicSelectionPage() {
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
+  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
+  const isTimeUp = deadline !== null && remainingSeconds <= 0;
+
   // 遷移時に渡された回答期限でカウントダウンを開始する
   useEffect(() => {
     setDeadline(answerDeadline);
   }, [answerDeadline, setDeadline]);
 
-  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
-  const isTimeUp = deadline !== null && remainingSeconds <= 0;
-
-  // 両者の回答が揃った場合・相手が離脱した場合・期限切れの場合をまとめて監視する
+  // 両者の回答が揃った場合と、相手が離脱した場合を監視する
   useEffect(() => {
     function handleAnyChangeResult(data: TopicChangeResult) {
       // カウントダウンの開始（setDeadline）は遷移先のTopicConfirmationPageの初期処理で行う
@@ -76,16 +76,18 @@ function TopicSelectionPage() {
     socket.on('topic:anyChangeResult', handleAnyChangeResult);
     socket.on('topic:opponentLeave', handleOpponentLeave);
 
-    // 期限切れになった瞬間にSocketを破棄する
-    if (isTimeUp) {
-      socket.disconnect();
-    }
-
     return () => {
       socket.off('topic:anyChangeResult', handleAnyChangeResult);
       socket.off('topic:opponentLeave', handleOpponentLeave);
     };
-  }, [navigate, isTimeUp]);
+  }, [navigate]);
+
+  // 期限切れになった瞬間に一度だけSocketを破棄する
+  useEffect(() => {
+    if (isTimeUp) {
+      socket.disconnect();
+    }
+  }, [isTimeUp]);
 
   // 期限切れ時、自分が回答済みなら「相手が期限内に回答しなかった」
   // 未回答なら「自分の時間切れ」

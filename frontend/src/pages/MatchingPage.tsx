@@ -22,7 +22,7 @@ function MatchingPage() {
       });
     }
 
-    // 破棄されている場合に備えて再接続する
+    // Socket接続
     socket.connect();
 
     socket.on('match:isFound', handleMatchFound);
