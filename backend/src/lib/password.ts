@@ -1,5 +1,5 @@
 import { argon2, randomBytes, timingSafeEqual } from 'node:crypto';
-import { dbPasswordHashSyntaxSchema } from './zod.schemas.js';
+import { dbPasswordHashFormatSchema, dbPasswordHashSyntaxSchema } from './zod.schemas.js';
 
 const ARGON2_OPTIONS = {
   parallelism: 3,
@@ -48,29 +48,18 @@ export const verifyArgon2PasswordHash = async (
   password: string,
   passwordHash: string,
 ): Promise<boolean> => {
-  const parts = passwordHash.split('$');
   // passwordHashの全体構造が正しいかチェック
-  if (parts.length !== 6 || parts[0] !== '') {
-    return false;
-  }
-
-  const [, algorithm, version, params, saltBase64, hashBase64] = parts;
+  const [, algorithm, version, params, saltBase64, hashBase64] = dbPasswordHashSyntaxSchema.parse(passwordHash);
 
   // DBに保存してあるハッシュ値形式のチェック
-  const dbPasswordHashSyntaxCheck = dbPasswordHashSyntaxSchema.safeParse({
-    algorithm,
-    version,
-    params,
-    saltBase64,
-    hashBase64,
-  });
-
-  if (!dbPasswordHashSyntaxCheck.success) {
-    return false;
-  }
-
   const { memory, passes, parallelism, salt, expectedHash } =
-    dbPasswordHashSyntaxCheck.data;
+    dbPasswordHashFormatSchema.parse({
+      algorithm,
+      version,
+      params,
+      saltBase64,
+      hashBase64,
+    });
 
   // 平文パスワードハッシュ化
   const derivedKey = await new Promise<Buffer>((resolve, reject) => {

@@ -16,8 +16,8 @@ export const PRISMA_ERROR_CODE = {
 } as const;
 
 /**
- * ユーザー未存在時（パスワードなし）のタイミング差を埋めるためのダミーハッシュ。
- * 秘密情報ではない（比較結果は必ず不一致）
+ * ユーザー未存在時でもパスワード検証処理を走らせ、応答時間差を小さくするためのダミーハッシュ。
+ * 秘密情報ではない（ユーザー未存在の場合はパスワード検証結果に関わらず必ず401を返す）
  */
 export const DUMMY_PASSWORD_HASH =
   '$argon2id$v=19$m=65536,t=4,p=3$f1eZ0Q/D8ujIWpX8zFPN3Q$iLElFLzaebEqp+C0sVE2iaPaM1nsSKYgH6uBE1EYofu8NsdzP08nM6sY9C0RxT8gxuDqV1S9cLa2aoEo+35KuQ';

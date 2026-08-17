@@ -36,7 +36,7 @@ export const auth = new Hono()
         select: { id: true, passwordHash: true },
       });
 
-      // passwordHashがnullならダミーと照合する
+      // ユーザー未存在時でもタイミング差を小さくするため、ダミーハッシュと照合する
       const passwordHash = activeUser?.passwordHash ?? DUMMY_PASSWORD_HASH;
 
       const isPasswordValid = await verifyArgon2PasswordHash(
@@ -63,7 +63,7 @@ export const auth = new Hono()
 
       setCookie(c, 'sessionId', sessionId, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
         path: '/',
       });

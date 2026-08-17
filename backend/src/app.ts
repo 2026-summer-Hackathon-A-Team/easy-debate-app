@@ -11,6 +11,7 @@ export const app = new Hono()
     '*',
     cors({
       origin: CORS_ORIGINS,
+      credentials: true,
     }),
   )
   .get('/health', (c) => {
@@ -26,6 +27,9 @@ export const app = new Hono()
    */
   .route('/api/v1/users', users)
 
+  /**
+   * ログイン認証・ログインチェック・ログアウト処理へ
+   */
   .route('/api/v1/auth', auth)
 
   .onError((err, c) => {
