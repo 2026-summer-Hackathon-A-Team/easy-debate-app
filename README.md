@@ -98,7 +98,7 @@
 
 詳しい使い方は [frontend/src/mocks/README.md](frontend/src/mocks/README.md) を参照
 
-### DBの確認(Prisma Studioを使用)
+## DBの確認(Prisma Studioを使用)
 
 1. 以下のコマンドを実行しPrisma Studioを起動
 
