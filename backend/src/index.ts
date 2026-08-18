@@ -1,8 +1,10 @@
 import { serve } from '@hono/node-server';
 import { app } from './app.js';
+import { createSocketServer } from './socket/index.js';
+import type { Server as HTTPServer } from 'node:http';
 
 // サーバー起動
-serve(
+const httpServer = serve(
   {
     fetch: app.fetch,
     port: Number(process.env.PORT) || 3000,
@@ -11,3 +13,5 @@ serve(
     console.log(`Server is running on http://localhost:${info.port}`);
   },
 );
+
+const io = createSocketServer(httpServer as HTTPServer);
