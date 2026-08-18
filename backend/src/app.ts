@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CORS_ORIGINS } from './cors.js';
 import { users } from './routes/users.js';
+import { auth } from './routes/auth.js';
 import type { ApplyGlobalResponse } from 'hono/client';
 import { HTTPException } from 'hono/http-exception';
 
@@ -25,6 +26,11 @@ export const app = new Hono()
    * 新規登録・退会・ユーザー情報取得・ユーザー名、パスワード変更処理へ
    */
   .route('/api/v1/users', users)
+
+  /**
+   * ログイン認証・ログインチェック・ログアウト処理へ
+   */
+  .route('/api/v1/auth', auth)
 
   .onError((err, c) => {
     const logData = logObj(err, c);
