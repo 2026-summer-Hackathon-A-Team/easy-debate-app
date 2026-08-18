@@ -21,7 +21,9 @@ type AuthClient = {
 // 204(セッションあり)/401(セッションなし)はどちらも正常な結果として扱い、
 // それ以外のステータスコードの場合のみ想定外のエラーとして throw する。
 async function checkSession(): Promise<LoginStatus> {
-  const response = await (client as unknown as AuthClient).api.v1.auth.session.$get();
+  const response = await (
+    client as unknown as AuthClient
+  ).api.v1.auth.session.$get();
 
   if (response.status === 204) {
     return 'loggedIn';

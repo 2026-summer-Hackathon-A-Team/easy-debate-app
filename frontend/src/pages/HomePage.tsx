@@ -2,7 +2,11 @@ import CardLayout from '../Layouts/CardLayout';
 import Heading from '../components/Heading';
 import Button from '../components/Button';
 
+import { useNavigate } from 'react-router';
+
 function HomePage() {
+  const navigate = useNavigate();
+
   return (
     <>
       <Heading level={1} className="text-center text-[26px]">
@@ -32,7 +36,12 @@ function HomePage() {
           </p>
         </div>
 
-        <Button className="w-full mt-5">ディベート開始</Button>
+        <Button
+          className="w-full mt-5"
+          onClick={() => navigate('/debates/matching')}
+        >
+          ディベート開始
+        </Button>
       </CardLayout>
     </>
   );

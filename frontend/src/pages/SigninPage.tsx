@@ -42,7 +42,10 @@ function SigninPage() {
           />
         </label>
 
-        <Button className="mt-2">ログイン</Button>
+        {/* TODO: 送信処理に差し替える */}
+        <Button className="mt-2" onClick={() => {}}>
+          ログイン
+        </Button>
         <Heading level={3} className="text-center mt-2 mb-1">
           アカウントをお持ちでない方は
           <Link to="/signup" className="font-black">
