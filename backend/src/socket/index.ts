@@ -5,7 +5,7 @@ import type {
   ServerToClientEvents,
   InterServerEvents,
   SocketData,
-} from './types/events.js'
+} from './types/events.js';
 import { socketAuth } from './middlewares/socket-auth.js';
 import { onConnection } from './handler/connection.js';
 import { CORS_ORIGINS } from '../cors.js';

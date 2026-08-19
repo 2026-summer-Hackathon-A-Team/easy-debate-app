@@ -6,7 +6,7 @@ export interface SocketData {
 }
 
 export interface ClientToServerEvents {
-  // 状態同期を依頼
+  // 画面側で同期させる為に必要なデーターの返却を依頼
   'sync:request': () => void;
   // マッチング待機の依頼
   // 未実装'match:standby': () => void;

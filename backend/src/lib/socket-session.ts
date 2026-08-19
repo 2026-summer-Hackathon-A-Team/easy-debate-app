@@ -1,3 +1,4 @@
+import { parseCookie } from 'cookie';
 /**
  * cookie内のsessionId名
  */
@@ -6,23 +7,13 @@ const SESSION_COOKIE_NAME = 'sessionId';
 /**
  * Socket用クッキー取得関数
  *
- * socket.handshake.headers.cookieにて取得したcookieからsessionIdを取り出す
+ * @param `socket.handshake.headers.cookie`の値
+ * @returns sessionId / Cookieが無い場合 `undefined`
  */
 export const getSessionId = (
   cookieHeader: string | undefined,
 ): string | undefined => {
-  if (cookieHeader === undefined) {
-    return undefined;
-  }
-
-  const sessionCookie = cookieHeader
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`));
-
-  // セッションID自体がない場合
-  if (sessionCookie === undefined) {
-    return undefined;
-  }
-  return sessionCookie.slice(SESSION_COOKIE_NAME.length + 1);
+  if (!cookieHeader) return undefined;
+  const value = parseCookie(cookieHeader)[SESSION_COOKIE_NAME];
+  return value === '' ? undefined : value;
 };

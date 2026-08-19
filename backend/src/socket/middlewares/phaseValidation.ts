@@ -1,13 +1,11 @@
-import type { DebatePhase } from '../debate-instance.js';
+import type { DebatePhase } from '../debate.js';
 import type { AppSocket } from '../types/events.js';
 import { debates, userDebateIds } from '../stores/user-debate.js';
 
 /**
  * phase検証対象外のイベント
  * */
-const PHASE_CHECK_EXCLUDED_EVENTS = new Set([
-  'sync:request',
-]);
+const PHASE_CHECK_EXCLUDED_EVENTS = new Set(['sync:request']);
 
 /**
  * インスタンスが存在しない状態を表す擬似phase

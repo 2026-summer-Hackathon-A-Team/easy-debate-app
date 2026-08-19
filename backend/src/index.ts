@@ -14,4 +14,4 @@ const httpServer = serve(
   },
 );
 
-const io = createSocketServer(httpServer as HTTPServer);
+createSocketServer(httpServer as HTTPServer);
