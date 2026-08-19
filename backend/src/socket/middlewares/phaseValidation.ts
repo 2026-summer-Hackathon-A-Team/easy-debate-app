@@ -59,7 +59,7 @@ export const phaseValidation =
     // 対応表に載っていないイベントは拒否
     const allowedPhases = EVENT_ALLOWED_PHASES[event];
     if (allowedPhases === undefined) {
-      next(new Error());
+      next(new Error('INVALID EVENT'));
       return;
     }
 
@@ -68,12 +68,12 @@ export const phaseValidation =
     const currentPhase = resolveCurrentPhase(userId);
 
     if (currentPhase === undefined) {
-      next(new Error());
+      next(new Error('Internal Server Error'));
       return;
     }
     // イベントごとに実行を許可するphaseに該当するか確認
     if (!allowedPhases.includes(currentPhase)) {
-      next(new Error());
+      next(new Error('INVALID EVENT'));
       return;
     }
     next();
