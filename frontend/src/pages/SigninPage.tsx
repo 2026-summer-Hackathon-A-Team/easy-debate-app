@@ -10,8 +10,7 @@ import Modal from '../components/Modal';
 import ValidatedTextField from '../components/ValidatedTextField';
 import ApiError from '../api/apiError';
 import { signin } from '../api/authApi';
-import { getUserInfo } from '../api/userApi';
-import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
+import { loginStatusAtom } from '../stores/userAtom';
 import { userNameSchema, passwordSchema } from '../validation/userSchemas';
 
 type ModalState = 'credentialsError' | 'loginError' | null;
@@ -20,7 +19,6 @@ function SigninPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const setLoginStatus = useSetAtom(loginStatusAtom);
-  const setUserInfo = useSetAtom(userInfoAtom);
 
   // SignupPage(登録完了後の「ログインへ」)からnavigateのstateで渡ってくる、入力済みのユーザー名
   const prefillUserName =
@@ -45,15 +43,11 @@ function SigninPage() {
 
     try {
       await signin({ userName, password });
-      const loggedInUser = await getUserInfo();
-
       setLoginStatus('loggedIn');
-      setUserInfo(loggedInUser);
       navigate('/');
     } catch (error) {
       // ユーザー名またはパスワードが不正
       if (error instanceof ApiError && error.status === 401) {
-        setErrorMessage(error.message);
         setModal('credentialsError');
       }
       // それ以外(入力値NG・想定外のエラー)
@@ -88,7 +82,6 @@ function SigninPage() {
           label="ユーザー名"
           type="text"
           placeholder="ユーザー名を入力"
-          minLength={6}
           maxLength={20}
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
@@ -105,7 +98,6 @@ function SigninPage() {
           type="password"
           wrapperClassName="mt-1"
           placeholder="パスワードを入力"
-          minLength={8}
           maxLength={64}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
