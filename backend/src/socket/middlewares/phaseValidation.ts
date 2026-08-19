@@ -6,15 +6,23 @@ import { debates, userDebateIds } from '../stores/user-debate.js';
  * phase検証対象外のイベント
  * */
 const PHASE_CHECK_EXCLUDED_EVENTS = new Set([
-  'match:standby',
-  'match:isConfirm',
   'sync:request',
 ]);
 
 /**
+ * インスタンスが存在しない状態を表す擬似phase
+ */
+const NO_DEBATE = 'NO_DEBATE' as const;
+type ValidationPhase = DebatePhase | typeof NO_DEBATE;
+
+/**
  * イベントごとに実行を許可するphaseを定義
  * */
-const EVENT_ALLOWED_PHASES: Partial<Record<string, readonly DebatePhase[]>> = {
+const EVENT_ALLOWED_PHASES: Partial<
+  Record<string, readonly ValidationPhase[]>
+> = {
+  'match:standby': [NO_DEBATE],
+  'match:isConfirm': [NO_DEBATE],
   'topic:anyChangeRequest': ['TOPIC_CHANGE'],
   'debate:isConfirm': ['DEBATE_READY'],
   'debate:chatSend': ['DEBATE'],
@@ -23,48 +31,50 @@ const EVENT_ALLOWED_PHASES: Partial<Record<string, readonly DebatePhase[]>> = {
 };
 
 /**
+ * ユーザーの現在の状態を確認する
+ */
+const resolveCurrentPhase = (userId: number): ValidationPhase | undefined => {
+  const debateId = userDebateIds.get(userId);
+  // ユーザーがどのディベートにも紐づいていない
+  if (debateId === undefined) return NO_DEBATE;
+  // ユーザーがディベートIDと紐づいているがインスタンスがない
+  const debate = debates.get(debateId);
+  if (debate === undefined) return undefined;
+
+  return debate.phase;
+};
+
+/**
  * phase検証イベント
  *
- * 'match:standby', 'match:isConfirm', 'sync:request'は対象外
+ * 'sync:request'は対象外
  */
 export const phaseValidation =
   (socket: AppSocket) =>
   ([event]: [string, ...unknown[]], next: (err?: Error) => void): void => {
-    // phase検証対象外
+    // phase検証対象外は下記処理をスルー
     if (PHASE_CHECK_EXCLUDED_EVENTS.has(event)) {
       next();
       return;
     }
 
-    const { userId } = socket.data;
-
-    // userIdからdebateId取得
-    const debateId = userDebateIds.get(userId);
-
-    if (debateId === undefined) {
-      next(new Error());
-      return;
-    }
-
-    // debateIdからDebateインスタンス取得
-    const debate = debates.get(debateId);
-
-    if (debate === undefined) {
-      console.warn(`ディベートインスタンスがありません。`);
-      next(new Error());
-      return;
-    }
-
-    // イベントに許可されているphaseを取得
+    // 対応表に載っていないイベントは拒否
     const allowedPhases = EVENT_ALLOWED_PHASES[event];
-
     if (allowedPhases === undefined) {
       next(new Error());
       return;
     }
-    // 現在のphaseが許可されているか検証
-    if (!allowedPhases.includes(debate.phase)) {
-      console.warn(`現在のphaseでは実行できないイベントです。`);
+
+    const { userId } = socket.data;
+
+    const currentPhase = resolveCurrentPhase(userId);
+
+    if (currentPhase === undefined) {
+      next(new Error());
+      return;
+    }
+    // イベントごとに実行を許可するphaseに該当するか確認
+    if (!allowedPhases.includes(currentPhase)) {
       next(new Error());
       return;
     }
