@@ -1,5 +1,5 @@
 import type { AppSocket } from '../types/events.js';
-import { syncHandler } from './sync:request-handler.js';
+/* レビュー対象外の為、コメントアウト。import { syncHandler } from './sync:request-handler.js';*/
 import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
@@ -27,7 +27,8 @@ export const onConnection = async (socket: AppSocket): Promise<void> => {
   // 受信イベントごとのphase検証（ハンドシェイクではない場合）
   socket.use(phaseValidation(socket));
 
-  socket.on('sync:request', () => {
+  // レビュー対象外の為、コメントアウト
+  /*socket.on('sync:request', () => {
     void syncHandler(socket);
-  });
+  });*/
 };
