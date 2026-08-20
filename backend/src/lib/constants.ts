@@ -13,6 +13,11 @@ export const PRISMA_ERROR_CODE = {
    * 一意（ユニーク）制約違反
    */
   UNIQUE_CONSTRAINT_FAILED: 'P2002',
+
+  /**
+   * 処理に必要なレコードが存在しない
+   */
+  RECORD_NOT_FOUND: 'P2025',
 } as const;
 
 /**
