@@ -7,6 +7,7 @@ import type { SyncResult } from './types/phase.js';
  */
 export type DebatePhase = Exclude<SyncResult['phase'], 'MATCHING'>;
 
+/** ディベート参加ユーザごとの状態 */
 type DebateUser = {
   userId: number;
   /** TOPIC_CHANGE / DEBATE_READY で自分が回答済みか */
@@ -52,7 +53,7 @@ export class Debate {
   /** チャット送信期限 */
   chatSubmitDeadline?: Date;
   /** 現在ターンのユーザーID */
-  currentTurnUserId?: number;
+  isCurrentTurnUserId?: number;
   /** 現在のターン数（初期値:0） */
   currentTurn: number;
   /** 合計ターン数 */
