@@ -36,17 +36,19 @@ export const signinBodySchema = z.object({
 export const dbPasswordHashSyntaxSchema = z
   .string()
   .regex(
-    /^\$argon2id\$v=19\$m=\d{1,10},t=\d{1,10},p=\d{1,8}\$[A-Za-z0-9+/]+\$[A-Za-z0-9+/]+$/)
+    /^\$argon2id\$v=19\$m=\d{1,10},t=\d{1,10},p=\d{1,8}\$[A-Za-z0-9+/]+\$[A-Za-z0-9+/]+$/,
+  )
   .transform((s) => s.split('$'))
-  .pipe(z.tuple([
-    z.literal(''),
-    z.string(), // algorithm
-    z.string(), // version
-    z.string(), // params
-    z.string(), // saltBase64
-    z.string(), // hashBase64
-  ]));
-
+  .pipe(
+    z.tuple([
+      z.literal(''),
+      z.string(), // algorithm
+      z.string(), // version
+      z.string(), // params
+      z.string(), // saltBase64
+      z.string(), // hashBase64
+    ]),
+  );
 
 // DBのpasswordHashから「m=65536,t=4,p=3」の形でパラメーターの値を取り出す
 const PARAMS_PATTERN = /^m=(\d{1,10}),t=(\d{1,10}),p=(\d{1,8})$/;

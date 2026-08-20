@@ -7,36 +7,39 @@ import type { SyncResult } from './types/phase.js';
  */
 export type DebatePhase = Exclude<SyncResult['phase'], 'MATCHING'>;
 
+type DebateUser = {
+  userId: number;
+  /** TOPIC_CHANGE / DEBATE_READY で自分が回答済みか */
+  isAnswered: boolean;
+  /** ポジション */
+  position?: string;
+  /** 先攻・後攻 */
+  turn?: 'FIRST' | 'SECOND';
+  /** 再対戦の希望を回答済みか */
+  isRematchAnswered?: boolean;
+  /** お礼を送信済みか */
+  isThanksDone?: boolean;
+};
+
+/**ユーザーごとの勝敗判定結果 */
+type JudgeUser = {
+  userId: number;
+  /** 勝敗フラグ */
+  isWinner: boolean;
+  /** 更新後レート */
+  updatedRate: number;
+  /** レート変動 */
+  rateUpDown: number;
+};
+
 /**
- * サーバーが保持するディベートインスタンス
+ * サーバーが保持するディベートクラス
  *
- * 一部フィールドはインスタンス生成しundefinedとし、エンドポイント内の処理にて代入します。
+ * 一部フィールドはインスタンス生成時、undefinedとし、エンドポイント内の処理にて代入します。
  */
 export class Debate {
   readonly debateId: string;
-  readonly users: [
-    {
-      userId: number;
-      /** TOPIC_CHANGE / DEBATE_READY で自分が回答済みか */
-      isAnswered: boolean;
-      /** ポジション */
-      position?: string;
-      /** 先攻・後攻 */
-      turn?: 'FIRST' | 'SECOND';
-      /** 再対戦の希望を回答済みか */
-      isRematchAnswered?: boolean;
-      /** お礼を送信済みか */
-      isThanksDone?: boolean;
-    },
-    {
-      userId: number;
-      isAnswered: boolean;
-      position?: string;
-      turn?: 'FIRST' | 'SECOND';
-      isRematchAnswered: boolean;
-      isThanksDone: boolean;
-    },
-  ];
+  readonly users: [DebateUser, DebateUser];
 
   /** 現在のフェーズ */
   phase: DebatePhase;
@@ -69,23 +72,7 @@ export class Debate {
     judgeReason: string;
 
     /** ユーザーごとの判定結果 */
-    users: [
-      {
-        userId: number;
-        /** 勝敗フラグ */
-        isWinner: boolean;
-        /** 更新後レート */
-        updatedRate: number;
-        /** レート変動 */
-        rateUpDown: number;
-      },
-      {
-        userId: number;
-        isWinner: boolean;
-        updatedRate: number;
-        rateUpDown: number;
-      },
-    ];
+    users: [JudgeUser, JudgeUser];
     /** 固定お礼の選択肢 */
     thanks?: { fixedThanksId: number; fixedThanksMsg: string }[];
   };

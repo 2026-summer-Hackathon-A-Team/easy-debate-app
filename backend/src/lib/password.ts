@@ -1,5 +1,8 @@
 import { argon2, randomBytes, timingSafeEqual } from 'node:crypto';
-import { dbPasswordHashFormatSchema, dbPasswordHashSyntaxSchema } from './zod.schemas.js';
+import {
+  dbPasswordHashFormatSchema,
+  dbPasswordHashSyntaxSchema,
+} from './zod.schemas.js';
 
 const ARGON2_OPTIONS = {
   parallelism: 3,
@@ -49,7 +52,8 @@ export const verifyArgon2PasswordHash = async (
   passwordHash: string,
 ): Promise<boolean> => {
   // passwordHashの全体構造が正しいかチェック
-  const [, algorithm, version, params, saltBase64, hashBase64] = dbPasswordHashSyntaxSchema.parse(passwordHash);
+  const [, algorithm, version, params, saltBase64, hashBase64] =
+    dbPasswordHashSyntaxSchema.parse(passwordHash);
 
   // DBに保存してあるハッシュ値形式のチェック
   const { memory, passes, parallelism, salt, expectedHash } =
