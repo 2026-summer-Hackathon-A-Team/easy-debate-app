@@ -32,8 +32,14 @@ export const app = new Hono()
    */
   .use(
     '/api/v1/*',
-    except(['/api/v1/users', '/api/v1/auth/signin'], sessionMiddleware),
+    except(
+      (c) =>
+        (c.req.method === 'POST' && c.req.path === '/api/v1/users') ||
+        (c.req.method === 'POST' && c.req.path === '/api/v1/auth/signin'),
+sessionMiddleware,
+),
   )
+
   /**
    * 新規登録・退会・ユーザー情報取得・ユーザー名、パスワード変更処理へ
    */
