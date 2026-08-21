@@ -131,7 +131,7 @@ export type Judge = {
     thanksMsg: string;
   }[];
   violation: {
-    isMoralViolationOfButtle: boolean;
+    isMoralViolationOfBattle: boolean;
     is2NoChat: boolean;
     isLeave: boolean;
     isMoralViolationOfThanks: boolean;
