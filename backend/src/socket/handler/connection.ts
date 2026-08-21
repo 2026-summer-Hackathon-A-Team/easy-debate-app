@@ -7,7 +7,7 @@ import { phaseValidation } from '../middlewares/phaseValidation.js';
 
 /**
  * 共通処理 個人ルーム参加処理
-*
+ *
  * 接続ユーザーを個人ルームへ参加させる。
  *
  * 参加中のディベートがある場合はディベートルームへ再参加させる。
@@ -16,7 +16,7 @@ import { phaseValidation } from '../middlewares/phaseValidation.js';
  */
 export const onConnection = async (
   io: AppServer,
-socket: AppSocket,
+  socket: AppSocket,
 ): Promise<void> => {
   const { userId } = socket.data;
   // ユーザーの個人ルームに参加
@@ -40,5 +40,5 @@ socket: AppSocket,
     void syncHandler(socket);
   });*/
 
-  socket.on('match:standby', () => void matchStandbyHandler(io, socket));
+  // 未実装socket.on('match:standby', () => void matchStandbyHandler(io, socket));
 };
