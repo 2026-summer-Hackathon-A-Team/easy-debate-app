@@ -36,8 +36,8 @@ export const app = new Hono()
       (c) =>
         (c.req.method === 'POST' && c.req.path === '/api/v1/users') ||
         (c.req.method === 'POST' && c.req.path === '/api/v1/auth/signin'),
-sessionMiddleware,
-),
+      sessionMiddleware,
+    ),
   )
 
   /**
