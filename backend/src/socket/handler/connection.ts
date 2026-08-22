@@ -4,6 +4,7 @@ import type { AppServer } from '../index.js';
 import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
+import { matchStandbyHandler } from './matching.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -40,5 +41,5 @@ export const onConnection = async (
     void syncHandler(socket);
   });*/
 
-  // 未実装socket.on('match:standby', () => void matchStandbyHandler(io, socket));
+  socket.on('match:standby', () => void matchStandbyHandler(io, socket));
 };
