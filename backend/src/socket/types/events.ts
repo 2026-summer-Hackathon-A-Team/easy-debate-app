@@ -9,14 +9,18 @@ export interface ClientToServerEvents {
   // 画面側で同期させる為に必要なデーターの返却を依頼
   'sync:request': () => void;
   // マッチング待機の依頼
-  // 未実装'match:standby': () => void;
+  'match:standby': () => void;
+  // マッチング完了の合図
+  // 未実装'match:isConfirm': () => void;
 }
 
 export interface ServerToClientEvents {
   // 現在の状態を返却
   'sync:result': (data: SyncResult) => void;
   // マッチング相手が見つかった合図
-  // 未実装'match:isFound': () => void;
+  'match:isFound': () => void;
+  // 両者マッチング確認を完了
+  // 未実装'match:complete': (data: TopicChange) => void;
 }
 
 export interface InterServerEvents {}
