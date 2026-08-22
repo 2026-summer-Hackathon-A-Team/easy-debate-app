@@ -42,11 +42,25 @@ export const matchingRooms = new Map<string, MatchingRoom>();
 export const waitingUsers = new Map<number, WaitingUser>();
 
 /**
+ * マッチング確認のタイムアウトタイマー管理用ストア
+ *
+ * debateIdの数だけタイマーがある
+ */
+const matchConfirmTimers = new Map<string, NodeJS.Timeout>();
+
+/**
  * モラルスコアの許容差
  *
  * ディベート相手検索時のモラルスコア差を定義
  */
 const MORAL_SCORE_TOLERANCES = [100, 200, 300, Infinity] as const;
+
+/**
+ * match:isConfirm 受付時間（ミリ秒）
+ *
+ * @defaultValue 20_000
+ */
+const MATCH_CONFIRM_TIMEOUT_MS = 20_000;
 
 /**
  * マッチング相手検索
@@ -79,6 +93,25 @@ const findMatchedUser = (me: WaitingUser): WaitingUser | undefined => {
   }
 
   return undefined;
+};
+
+/**
+ * マッチング確認のタイムアウトタイマー開始
+ *
+ * すでに開始済みの場合、何もしない
+ */
+const startMatchConfirmTimer = (
+  debateId: string,
+  callback: () => void,
+  ms: number,
+): void => {
+  // すでにdebateIdにタイマーが登録されていれば何もしない
+  if (matchConfirmTimers.has(debateId)) return;
+  const timer = setTimeout(() => {
+    matchConfirmTimers.delete(debateId);
+    callback();
+  }, ms);
+  matchConfirmTimers.set(debateId, timer);
 };
 
 /**
@@ -153,4 +186,11 @@ export const matchStandbyHandler = async (
   await socket.join(debateRoom(debateId));
   io.in(userRoom(matchedUser.userId)).socketsJoin(debateRoom(debateId));
   io.to(debateRoom(debateId)).emit('match:isFound');
+
+  // タイムアウト用タイマー開始
+  startMatchConfirmTimer(
+    debateId,
+    () => void confirmTimeout(io, debateId),
+    MATCH_CONFIRM_TIMEOUT_MS,
+  );
 };
