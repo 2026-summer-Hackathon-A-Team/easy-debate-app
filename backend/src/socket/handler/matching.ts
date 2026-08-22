@@ -19,7 +19,6 @@ export type WaitingUser = {
  * phase:"TOPIC_CHANGE"になるまで
  */
 type MatchingRoom = {
-  debateId: string;
   userIds: [number, number];
   /** `match:isConfirm`を送ったユーザーID */
   confirmedUserIds: Set<number>;
@@ -61,6 +60,24 @@ const MORAL_SCORE_TOLERANCES = [100, 200, 300, Infinity] as const;
  * @defaultValue 20_000
  */
 const MATCH_CONFIRM_TIMEOUT_MS = 20_000;
+
+/**
+ * ユーザーがすでにマッチング処理中か判定
+ *
+ * 待機中またはマッチング確認待ちのどちらかであればtrue
+ * @param userId
+ * @returns true | false
+ */
+const isUserMatchInProgress = (userId: number): boolean => {
+  // マッチング待機中
+  if (waitingUsers.has(userId)) return true;
+  // マッチング確認待ち
+  for (const room of matchingRooms.values()) {
+    if (room.userIds.includes(userId)) return true;
+  }
+  // どこにもいなければfalse
+  return false;
+};
 
 /**
  * マッチング相手検索
@@ -127,14 +144,8 @@ export const matchStandbyHandler = async (
 ): Promise<void> => {
   const { userId } = socket.data;
 
-  // すでに待機中なら何もしないで終了（二重登録防止）
-  if (waitingUsers.has(userId)) {
-    return;
-  }
-
-  // すでにマッチング確認待ちなら何もしないで終了（二重登録防止）
-  for (const room of matchingRooms.values()) {
-    if (room.userIds.includes(userId)) return;
+  // 二重登録防止
+  if (isUserMatchInProgress(userId)) return;
   }
 
   // マッチングに必要なユーザー情報をDBから取得
@@ -150,6 +161,9 @@ export const matchStandbyHandler = async (
   if (user === null) {
     return;
   }
+
+  // 二重登録再確認（DB問い合わせ中の連続送信時対応）
+  if (isUserMatchInProgress(userId)) return;
 
   /** 待機中ユーザー情報 */
   const waitingUser: WaitingUser = {
@@ -177,7 +191,6 @@ export const matchStandbyHandler = async (
 
   // マッチング確認待ちに登録
   matchingRooms.set(debateId, {
-    debateId,
     userIds: [userId, matchedUser.userId],
     confirmedUserIds: new Set(),
   });

@@ -30,11 +30,13 @@ export const onConnection = async (
     // TODO: 離脱判定タイマー停止cancelDisconnectTimer(userId); // 未実装
   }
 
-  // TODO: 再接続の猶予タイマーと disconnect ハンドラを実装する。
-  // 未実装　socket.on('disconnect', () => {});
-
   // 受信イベントごとのphase検証（ハンドシェイクではない場合）
   socket.use(phaseValidation(socket));
+
+  // disconnectハンドラ
+  socket.on('disconnect', () => {
+    void disconnectHandler(io, userId);
+  });
 
   // レビュー対象外の為、コメントアウト
   /*socket.on('sync:request', () => {
