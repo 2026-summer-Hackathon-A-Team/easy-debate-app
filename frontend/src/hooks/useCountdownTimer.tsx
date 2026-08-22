@@ -1,25 +1,12 @@
-import { useEffect } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useEffect, useState } from 'react';
 
-import { deadlineAtom, nowAtom } from '../stores/timerAtom';
-
-// deadlineAtomを監視し、nowAtomを1秒ごとに更新することでremainingSecondsAtom(派生atom)を
-// 再計算させる。SocketManagerで1度だけ呼び出す
-function useCountdownTimer() {
-  const deadline = useAtomValue(deadlineAtom);
-  const setNow = useSetAtom(nowAtom);
+// deadlineまでの残り秒数を1秒ごとに再計算して返す
+function useCountdownTimer(deadline: string): number {
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!deadline) {
-      return;
-    }
-
-    const now = Date.now();
-
-    setNow(now);
-
     // 既に期限を過ぎている場合はタイマーを開始しない
-    if (new Date(deadline).getTime() - now <= 0) {
+    if (new Date(deadline).getTime() - Date.now() <= 0) {
       return;
     }
 
@@ -35,7 +22,11 @@ function useCountdownTimer() {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [deadline, setNow]);
+  }, [deadline]);
+
+  const remainingMs = new Date(deadline).getTime() - now;
+
+  return Math.max(0, Math.ceil(remainingMs / 1000));
 }
 
 export default useCountdownTimer;
