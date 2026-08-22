@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useAtom } from 'jotai';
 
 import logo from '../assets/easy-debate-logo.png';
@@ -8,15 +8,22 @@ import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
 import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
 
+// ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
+const publicPaths = ['/signin', '/signup'];
+
 function Header() {
+  const location = useLocation();
   const navigate = useNavigate();
 
   const [loginStatus, setLoginStatus] = useAtom(loginStatusAtom);
   const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
+  // 現在のパスが「未ログインでも見られるページ」かどうか
+  const isPublicPage = publicPaths.includes(location.pathname);
+
   // ログイン済みと分かったら、ユーザー情報を取得する(初期処理)
   useEffect(() => {
-    if (loginStatus !== 'loggedIn' || userInfo !== null) {
+    if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
     }
 
@@ -26,10 +33,9 @@ function Header() {
 
         setUserInfo(data);
       } catch (error) {
-        // 401(未認証)ならセッション切れとみなしログアウト状態にする
+        // 401(未認証)ならセッションが無効なので、関連するstoreを全て初期化しつつログインチェックからやり直す
         if (error instanceof ApiError && error.status === 401) {
-          setLoginStatus('loggedOut');
-          setUserInfo(null);
+          window.location.replace('/signin');
           return;
         }
 
@@ -40,7 +46,7 @@ function Header() {
     }
 
     fetchUserInfo();
-  }, [loginStatus, userInfo, setLoginStatus, setUserInfo, navigate]);
+  }, [loginStatus, isPublicPage, userInfo, setLoginStatus, setUserInfo, navigate]);
 
   return (
     <header className="bg-white border-b border-[#e4e2dd]">
