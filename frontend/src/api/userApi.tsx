@@ -18,25 +18,9 @@ type ErrorResponseBody = {
   errorMsg?: string;
 };
 
-// TODO: バックエンドに/api/v1/users が実装され AppType に反映されたら、
-// client.api.v1.users.$post()/client.api.v1.users.me.$get() をそのまま使う
-// as unknown as UserClientも削除する
-type UserClient = {
-  api: {
-    v1: {
-      users: {
-        $post: (input: { json: RegisterRequest }) => Promise<Response>;
-        me: {
-          $get: () => Promise<Response>;
-        };
-      };
-    };
-  };
-};
-
 // 新規ユーザーを登録する。登録のみで自動ログインはしない(セッションは発行されない)
 async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
-  const response = await (client as unknown as UserClient).api.v1.users.$post({
+  const response = await client.api.v1.users.$post({
     json: data,
   });
 
@@ -61,9 +45,7 @@ async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
 // 成功時の戻り値がユーザー情報そのものなので、失敗(未認証など)は
 // checkSessionと違い戻り値では表現できずApiErrorをthrowして呼び出し元に伝える。
 async function getUserInfo(): Promise<UserInfo> {
-  const response = await (
-    client as unknown as UserClient
-  ).api.v1.users.me.$get();
+  const response = await client.api.v1.users.me.$get();
 
   if (response.status === 200) {
     const data = (await response.json()) as UserInfo;

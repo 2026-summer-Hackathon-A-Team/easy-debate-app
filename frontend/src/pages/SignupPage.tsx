@@ -78,7 +78,6 @@ function SignupPage() {
           label="ユーザー名"
           type="text"
           placeholder="6~20文字（英数字）"
-          minLength={6}
           maxLength={20}
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
@@ -95,7 +94,6 @@ function SignupPage() {
           type="password"
           wrapperClassName="mt-1"
           placeholder="8~64文字（英数字混合）"
-          minLength={8}
           maxLength={64}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
