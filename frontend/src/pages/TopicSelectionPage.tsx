@@ -29,17 +29,7 @@ function TopicSelectionPage() {
 
   // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
   // 画面リロード時もこの導線を通るため、直接URLアクセス（stateが無い場合）は不正アクセスとして扱う
-  // TODO: 動作確認用のフォールバックを削除したら、以下の本来のコードに戻す
-  // const { topic, answerDeadline } = location.state as MatchComplete;
-
-  // TODO: 動作確認用。バックエンド未実装で正規の導線を通れないため、
-  // stateが無い場合のみ仮の値で補っている。確認が終わったら上のコメントアウトを外し、この下を削除する
-  const [fallbackState] = useState<MatchComplete>(() => ({
-    topic: '仮のお題',
-    answerDeadline: new Date(Date.now() + 10_000).toISOString(),
-  }));
-  const { topic, answerDeadline } =
-    (location.state as MatchComplete | null) ?? fallbackState;
+  const { topic, answerDeadline } = location.state as MatchComplete;
 
   // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
   const [isAnswered, setIsAnswered] = useState(false);

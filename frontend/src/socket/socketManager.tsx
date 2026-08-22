@@ -36,9 +36,15 @@ function SocketManager() {
     return () => {
       socket.off('connect', handleConnect);
       socket.off('sync:result', handleSyncResult);
+
+      // SocketManagerがアンマウントされた(=/debates/*から離れた)ら接続を破棄する
       socket.disconnect();
     };
-  }, [navigate]);
+    // navigateは依存に含めない: react-routerではpathnameが変わるたびに参照が
+    // 作り直されるため、依存に入れると/debates/*内で画面遷移するたびにこのeffectが
+    // 再実行され、その都度disconnect()が呼ばれて通信が切れてしまう。
+    // ここで呼ぶnavigate()は全て絶対パスなので、マウント時に捕まえた参照のままで問題ない
+  }, []);
 
   return <Outlet />;
 }
