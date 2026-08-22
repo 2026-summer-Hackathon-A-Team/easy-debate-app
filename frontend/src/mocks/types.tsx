@@ -59,7 +59,7 @@ type Judge = {
 
 // 違反・不戦敗の状態
 type Violation = {
-  isMoralViolationOfButtle: boolean;
+  isMoralViolationOfBattle: boolean;
   is2NoChat: boolean;
   isLeave: boolean;
   isMoralViolationOfThanks: boolean;

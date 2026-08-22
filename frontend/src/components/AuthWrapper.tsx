@@ -55,10 +55,9 @@ function AuthWrapper() {
 
         setUserInfo(data);
       } catch (error) {
-        // 401(未認証)ならセッション切れとみなしログアウト状態にする
+        // 401(未認証)ならセッションが無効なので、関連するstoreを全て初期化しつつログインチェックからやり直す
         if (error instanceof ApiError && error.status === 401) {
-          setLoginStatus('loggedOut');
-          setUserInfo(null);
+          window.location.replace('/signin');
           return;
         }
 
