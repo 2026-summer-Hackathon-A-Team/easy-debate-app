@@ -35,7 +35,7 @@ export const createSocketServer = (httpServer: HTTPServer): AppServer => {
 
   io.on('connection', (socket) => {
     // 例外が投げられたら接続を切る
-    onConnection(socket).catch((e) => {
+    onConnection(io, socket).catch((e) => {
       console.error(e);
       socket.disconnect(true);
     });
