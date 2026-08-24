@@ -70,7 +70,7 @@ export const auth = new Hono<UserEnv>()
       setCookie(c, 'sessionId', sessionId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
+        sameSite: 'None',
         path: '/',
       });
       return c.body(null, 204);
@@ -113,7 +113,7 @@ export const auth = new Hono<UserEnv>()
     setCookie(c, 'sessionId', newSessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'None',
       path: '/',
     });
     c.header('Cache-Control', 'no-store');
