@@ -33,6 +33,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       # CORSの許可するオリジン
       - CORS_ORIGINS=${CORS_ORIGINS}
+      # ClaudeAPIキー
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     depends_on:
       db:
         condition: service_healthy

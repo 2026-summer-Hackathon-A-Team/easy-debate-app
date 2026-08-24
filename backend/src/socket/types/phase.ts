@@ -145,3 +145,6 @@ export type Judge = {
 
 export type SyncResult =
   Matching | TopicChange | DebateReady | Debate | JudgeWaiting | Judge;
+
+/** match:complete用レスポンスの型 */
+export type MatchComplete = Pick<TopicChange, 'topic' | 'answerDeadline'>;

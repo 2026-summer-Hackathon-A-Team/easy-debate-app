@@ -4,7 +4,8 @@ import type { AppServer } from '../index.js';
 import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
-import { matchStandbyHandler } from './matching.js';
+import { matchStandbyHandler, matchIsConfirmHandler } from './matching.js';
+import { disconnectHandler } from './disconnect.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -35,7 +36,11 @@ export const onConnection = async (
 
   // disconnectハンドラ
   socket.on('disconnect', () => {
-    void disconnectHandler(io, userId);
+    try {
+      disconnectHandler(io, userId);
+    } catch (e) {
+      console.error('disconnectの処理に失敗しました。', e);
+    }
   });
 
   // レビュー対象外の為、コメントアウト
@@ -43,5 +48,19 @@ export const onConnection = async (
     void syncHandler(socket);
   });*/
 
-  socket.on('match:standby', () => void matchStandbyHandler(io, socket));
+  socket.on('match:standby', () => {
+    try {
+      matchStandbyHandler(io, socket.data.userId);
+    } catch (e) {
+      console.error('match:standbyの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('match:isConfirm', () => {
+    try {
+      matchIsConfirmHandler(io, socket);
+    } catch (e) {
+      console.error('match:isConfirmの処理に失敗しました。', e);
+    }
+  });
 };

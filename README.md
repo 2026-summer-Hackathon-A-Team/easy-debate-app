@@ -10,10 +10,11 @@
    cp .env.example .env
    ```
 
-2. （Claude 連携を利用する場合のみ）Claude の API キーを取得し、`.env` の `ANTHROPIC_API_KEY` に設定
-   ```env
-   ANTHROPIC_API_KEY=<取得したAPI_KEY>
-   ```
+2. （Claude 連携を利用する場合のみ）Claude の API キーを取得し、`.env` の `ANTHROPIC_API_KEY` に設定（必要な場合は Mattermost で管理者に連絡して取得）
+
+```env
+ANTHROPIC_API_KEY=<取得したAPI_KEY>
+```
 
 ### コンテナ起動
 

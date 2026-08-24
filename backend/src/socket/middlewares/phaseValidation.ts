@@ -1,4 +1,4 @@
-import type { DebatePhase } from '../debate.js';
+import type { DebatePhase } from '../Debate.js';
 import type { AppSocket } from '../types/events.js';
 import { debates, userDebateIds } from '../stores/user-debate.js';
 
