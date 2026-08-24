@@ -1,4 +1,4 @@
-import type { Debate } from '../debate.js';
+import type { Debate } from '../Debate.js';
 
 /**
  * ユーザーIDが今参加しているディベートIDの対応表

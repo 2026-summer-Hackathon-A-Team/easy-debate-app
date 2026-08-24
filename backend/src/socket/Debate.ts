@@ -20,6 +20,8 @@ type DebateUser = {
   isRematchAnswered?: boolean;
   /** お礼を送信済みか */
   isThanksDone?: boolean;
+  /** お題チェンジ希望の有無 */
+  isHopeChangeTopic?: boolean;
 };
 
 /**ユーザーごとの勝敗判定結果 */
