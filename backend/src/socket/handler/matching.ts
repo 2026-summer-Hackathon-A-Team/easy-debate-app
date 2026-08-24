@@ -28,23 +28,28 @@ type MatchingRoom = {
 };
 
 /**
- * マッチング確認待ちオブジェクト
+ * マッチング確認待ちルームストア
+ *
+ * - key: debateID
+ * - value: {@link MatchingRoom} マッチング確認待ちオブジェクト
  *
  * phase:"TOPIC_CHANGE"になるまでこちらで管理
  */
 export const matchingRooms = new Map<string, MatchingRoom>();
 
 /**
- * マッチング待機オブジェクト
+ * マッチング待機ユーザーストア
  *
- * key: userId
- *
- * value: 待機中のユーザーID・レート・モラルスコアを保持
+ * - key: userId
+ * - value: {@link WaitingUser} マッチング待機中ユーザー情報
  */
 export const waitingUsers = new Map<number, WaitingUser>();
 
 /**
  * マッチング確認のタイムアウトタイマー管理用ストア
+ *
+ * - key: debateId
+ * - value: タイムアウト用タイマー
  *
  * debateIdの数だけタイマーがある
  */
@@ -162,30 +167,42 @@ const confirmTimeout = async (
   io: AppServer,
   debateId: string,
 ): Promise<void> => {
-  const room = matchingRooms.get(debateId);
-  // 両者確認済み・room無しの場合何もしない
-  if (room === undefined) return;
+  try {
+    const room = matchingRooms.get(debateId);
+    // 両者確認済み・room無しの場合何もしない
+    if (room === undefined) return;
 
-  matchingRooms.delete(debateId);
+    matchingRooms.delete(debateId);
 
-  /** 応答したユーザー */
-  const confirmed = room.userIds.filter((id) => room.confirmedUserIds.has(id));
-  /** 応答がなかったユーザー */
-  const unconfirmed = room.userIds.filter(
-    (id) => !room.confirmedUserIds.has(id),
-  );
+    /** 応答したユーザー */
+    const confirmed = room.userIds.filter((id) =>
+      room.confirmedUserIds.has(id),
+    );
+    /** 応答がなかったユーザー */
+    const unconfirmed = room.userIds.filter(
+      (id) => !room.confirmedUserIds.has(id),
+    );
 
-  // 応答がなかったユーザーの接続を破棄
-  for (const uid of unconfirmed) {
-    io.in(userRoom(uid)).disconnectSockets(true);
-  }
+    // 応答がなかったユーザーの接続を破棄
+    for (const uid of unconfirmed) {
+      io.in(userRoom(uid)).disconnectSockets(true);
+    }
 
-  // debateRoomから全員退出
-  io.in(debateRoom(debateId)).socketsLeave(debateRoom(debateId));
+    // debateRoomから全員退出
+    io.in(debateRoom(debateId)).socketsLeave(debateRoom(debateId));
 
-  // 応答があったユーザーはマッチング待機処理へ
-  for (const uid of confirmed) {
-    await matchStandbyHandler(io, uid);
+    // 応答があったユーザーはマッチング待機処理へ
+    for (const uid of confirmed) {
+      await matchStandbyHandler(io, uid);
+    }
+  } catch (e) {
+    console.error(
+      'マッチング確認のタイムアウト処理に失敗しました。',
+      {
+        debateId,
+      },
+      e,
+    );
   }
 };
 
@@ -322,12 +339,12 @@ export const matchIsConfirmHandler = async (
   /**
    * お題・ポジション・先行後攻を取得
    *
-   * APIからのレスポンスの形式チェックが2回すると何も返さない為、固定のお題を返してあげる
+   * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
    */
   const { topic, positionA, positionB } = await requestTopic().catch((e) => {
     console.error('topic generation failed', e);
     return {
-      topic: 'CPのOSはWindowsかMacどちらが優れている?',
+      topic: 'PCのOSはWindowsかMacどちらが優れている?',
       positionA: 'Windowsが優れている',
       positionB: 'Macが優れている',
     };
@@ -359,9 +376,7 @@ export const matchIsConfirmHandler = async (
 
   // 2名へマッチング完了を通知
   io.to(debateRoom(debateId)).emit('match:complete', {
-    phase: 'TOPIC_CHANGE',
     topic,
     answerDeadline: answerDeadline.toISOString(),
-    isAnswered: false,
   });
 };

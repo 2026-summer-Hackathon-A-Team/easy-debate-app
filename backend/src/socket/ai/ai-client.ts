@@ -7,7 +7,7 @@ if (apiKey === undefined) {
 
 const client = new Anthropic({ apiKey });
 
-/** パタメータの型 */
+/** パラメータの型 */
 export type RequestTextParams = {
   model: string;
   system: string;

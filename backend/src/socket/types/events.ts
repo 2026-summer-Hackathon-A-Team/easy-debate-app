@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import type { SyncResult, TopicChange } from './phase.js';
+import type { MatchComplete, SyncResult } from './phase.js';
 
 export interface SocketData {
   userId: number;
@@ -20,7 +20,7 @@ export interface ServerToClientEvents {
   // マッチング相手が見つかった合図
   'match:isFound': () => void;
   // 両者マッチング確認を完了
-  'match:complete': (data: TopicChange) => void;
+  'match:complete': (data: MatchComplete) => void;
 }
 
 export interface InterServerEvents {}
