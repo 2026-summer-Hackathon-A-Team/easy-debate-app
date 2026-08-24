@@ -6,8 +6,9 @@ import { prisma } from '../lib/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { DELETE_MARKER_ACTIVE, PRISMA_ERROR_CODE } from '../lib/constants.js';
 import { HTTPException } from 'hono/http-exception';
+import type { UserEnv } from '../authmiddleware.js';
 
-export const users = new Hono()
+export const users = new Hono<UserEnv>()
   /**
    * ユーザー新規登録API
    * POST /api/v1/users/
@@ -60,4 +61,33 @@ export const users = new Hono()
       }
       return c.json({ userName: userName }, 201);
     },
-  );
+  )
+
+  /**
+   * ユーザー情報取得API
+   * GET /api/v1/users/me
+   */
+  .get('/me', async (c) => {
+    const userId = c.get('userId');
+
+    // ユーザー情報取得
+    const userStatus = await prisma.user.findUnique({
+      where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+      select: { id: true, userName: true, rate: true, deleteMarker: true },
+    });
+
+    // ユーザー情報なし
+    if (!userStatus) {
+      throw new HTTPException(401, { message: 'ログインしていません。' });
+    }
+
+    c.header('Cache-Control', 'no-store');
+    return c.json(
+      {
+        userId: userStatus.id,
+        userName: userStatus.userName,
+        rate: userStatus.rate,
+      },
+      200,
+    );
+  });
