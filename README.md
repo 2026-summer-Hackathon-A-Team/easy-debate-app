@@ -44,7 +44,7 @@ ANTHROPIC_API_KEY=<取得したAPI_KEY>
   docker compose exec backend sh -c 'npx prisma migrate dev && npx prisma generate'
   ```
 
-- 開発用DBを初期化して、Prismaスキーマの内容を再反映
+- 開発用DBを初期化し、Prismaスキーマの内容を再反映
   ```sh
   docker compose exec backend sh -c 'npx prisma migrate reset --force && npx prisma generate'
   ```
