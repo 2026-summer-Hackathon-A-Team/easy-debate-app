@@ -5,9 +5,7 @@ import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
 import { matchStandbyHandler, matchIsConfirmHandler } from './matching.js';
-import { syncHandler } from './sync:request.js';
 import { disconnectHandler } from './disconnect.js';
-import { matchStandbyHandler } from './matching.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -65,5 +63,4 @@ export const onConnection = async (
       console.error('match:isConfirmの処理に失敗しました。', e);
     }
   });
-
 };

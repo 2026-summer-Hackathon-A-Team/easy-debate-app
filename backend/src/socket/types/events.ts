@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import type { SyncResult } from './phase.js';
+import type { SyncResult, TopicChange } from './phase.js';
 
 export interface SocketData {
   userId: number;
