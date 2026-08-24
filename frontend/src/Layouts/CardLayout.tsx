@@ -14,7 +14,7 @@ function CardLayout({ children, className }: CardLayoutProps) {
         className,
       )}
     >
-      <div className="w-full max-w-md rounded-2xl border border-[#e4e2dd] bg-white p-8 shadow-lg">
+      <div className="w-full max-w-lg rounded-2xl border border-[#e4e2dd] bg-white p-8 shadow-lg">
         {children}
       </div>
     </div>

@@ -4,4 +4,4 @@
 // 'loggedOut' : 未ログイン
 type LoginStatus = 'unchecked' | 'loggedIn' | 'loggedOut';
 
-export type { LoginStatus }
+export type { LoginStatus };
