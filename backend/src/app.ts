@@ -2,8 +2,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CORS_ORIGINS } from './cors.js';
 import { users } from './routes/users.js';
+import { auth } from './routes/auth.js';
 import type { ApplyGlobalResponse } from 'hono/client';
 import { HTTPException } from 'hono/http-exception';
+import { except } from 'hono/combine';
+import { sessionMiddleware } from './authmiddleware.js';
 
 export const app = new Hono()
   .use(
@@ -21,10 +24,31 @@ export const app = new Hono()
 
     return c.text(`Hello, ${name}!`);
   })
+
+  /**
+   * セッションチェックミドルウェア
+   *
+   * 新規登録・ログインAPIは除外
+   */
+  .use(
+    '/api/v1/*',
+    except(
+      (c) =>
+        (c.req.method === 'POST' && c.req.path === '/api/v1/users') ||
+        (c.req.method === 'POST' && c.req.path === '/api/v1/auth/signin'),
+      sessionMiddleware,
+    ),
+  )
+
   /**
    * 新規登録・退会・ユーザー情報取得・ユーザー名、パスワード変更処理へ
    */
   .route('/api/v1/users', users)
+
+  /**
+   * ログイン認証・ログインチェック・ログアウト処理へ
+   */
+  .route('/api/v1/auth', auth)
 
   .onError((err, c) => {
     const logData = logObj(err, c);

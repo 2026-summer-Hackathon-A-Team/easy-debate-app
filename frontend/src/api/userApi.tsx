@@ -2,26 +2,50 @@ import type { UserInfo } from '../types/user';
 import ApiError from './apiError';
 import { client } from './client';
 
-// TODO: バックエンドに/api/v1/users/me が実装され AppType に反映されたら、
-// client.api.v1.users.me.$get() をそのまま使う
-// as unknown as UserClientも削除する
-type UserClient = {
-  api: {
-    v1: {
-      users: {
-        me: {
-          $get: () => Promise<Response>;
-        };
-      };
-    };
-  };
+// 新規登録リクエストボディ
+type RegisterRequest = {
+  userName: string;
+  password: string;
 };
+
+// 新規登録レスポンス(201)
+type RegisterResponse = {
+  userName: string;
+};
+
+// エラーレスポンス(400/409)。errorMsgは任意なので無い場合もある
+type ErrorResponseBody = {
+  errorMsg?: string;
+};
+
+// 新規ユーザーを登録する。登録のみで自動ログインはしない(セッションは発行されない)
+async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
+  const response = await client.api.v1.users.$post({
+    json: data,
+  });
+
+  if (response.status === 201) {
+    return (await response.json()) as RegisterResponse;
+  }
+
+  // 400(入力値NG)/409(ユーザー名重複): 呼び出し元がモーダルを出し分けるためのエラー
+  if (response.status === 400 || response.status === 409) {
+    const body = (await response.json()) as ErrorResponseBody;
+
+    throw new ApiError(
+      response.status,
+      body.errorMsg ?? '新規登録に失敗しました',
+    );
+  }
+
+  throw new ApiError(response.status, '新規登録に失敗しました');
+}
 
 // ログイン中のユーザー自身の情報をサーバーから取得する。
 // 成功時の戻り値がユーザー情報そのものなので、失敗(未認証など)は
-// checkSession と違い戻り値では表現できず、ApiError を throw して呼び出し元に伝える。
+// checkSessionと違い戻り値では表現できずApiErrorをthrowして呼び出し元に伝える。
 async function getUserInfo(): Promise<UserInfo> {
-  const response = await (client as unknown as UserClient).api.v1.users.me.$get();
+  const response = await client.api.v1.users.me.$get();
 
   if (response.status === 200) {
     const data = (await response.json()) as UserInfo;
@@ -38,4 +62,4 @@ async function getUserInfo(): Promise<UserInfo> {
   throw new ApiError(response.status, 'ユーザー情報の取得に失敗しました');
 }
 
-export { getUserInfo };
+export { registerUser, getUserInfo };
