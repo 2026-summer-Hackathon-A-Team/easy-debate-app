@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useAtom } from 'jotai';
+import { useAtom, useStore } from 'jotai';
 
 import logo from '../assets/easy-debate-logo.png';
 import Heading from '../components/Heading';
 import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
-import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
+import {
+  isFetchingUserInfoAtom,
+  loginStatusAtom,
+  userInfoAtom,
+} from '../stores/userAtom';
 
 // ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
 const publicPaths = ['/signin', '/signup'];
@@ -18,6 +22,8 @@ function Header() {
   const [loginStatus, setLoginStatus] = useAtom(loginStatusAtom);
   const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
+  const store = useStore();
+
   // 現在のパスが「未ログインでも見られるページ」かどうか
   const isPublicPage = publicPaths.includes(location.pathname);
 
@@ -26,6 +32,13 @@ function Header() {
     if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
     }
+
+    if (store.get(isFetchingUserInfoAtom)) {
+      return;
+    }
+
+    // 先に呼び出す側としてフラグを立てる
+    store.set(isFetchingUserInfoAtom, true);
 
     async function fetchUserInfo() {
       try {
@@ -42,11 +55,21 @@ function Header() {
         // それ以外のエラーは想定外のためエラーページへ(ログインチェックも未確認に戻す)
         setLoginStatus('unchecked');
         navigate('/500');
+      } finally {
+        store.set(isFetchingUserInfoAtom, false);
       }
     }
 
     fetchUserInfo();
-  }, [loginStatus, isPublicPage, userInfo, setLoginStatus, setUserInfo, navigate]);
+  }, [
+    loginStatus,
+    isPublicPage,
+    userInfo,
+    setLoginStatus,
+    setUserInfo,
+    navigate,
+    store,
+  ]);
 
   return (
     <header className="bg-white border-b border-[#e4e2dd]">
