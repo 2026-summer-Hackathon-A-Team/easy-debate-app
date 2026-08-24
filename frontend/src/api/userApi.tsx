@@ -41,27 +41,11 @@ async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
   throw new ApiError(response.status, '新規登録に失敗しました');
 }
 
-// TODO（動作確認用のため削除）
-type UserClient = {
-  api: {
-    v1: {
-      users: {
-        $post: (input: { json: RegisterRequest }) => Promise<Response>;
-        me: {
-          $get: () => Promise<Response>;
-        };
-      };
-    };
-  };
-};
-
 // ログイン中のユーザー自身の情報をサーバーから取得する。
 // 成功時の戻り値がユーザー情報そのものなので、失敗(未認証など)は
 // checkSessionと違い戻り値では表現できずApiErrorをthrowして呼び出し元に伝える。
 async function getUserInfo(): Promise<UserInfo> {
-  const response = await (
-    client as unknown as UserClient
-  ).api.v1.users.me.$get();
+  const response = await client.api.v1.users.me.$get();
 
   if (response.status === 200) {
     const data = (await response.json()) as UserInfo;
