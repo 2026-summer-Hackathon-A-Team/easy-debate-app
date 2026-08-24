@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
-import { useAtom } from 'jotai';
+import { useAtom, useStore } from 'jotai';
 
 import { checkSession } from '../api/authApi';
 import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
-import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
+import {
+  isCheckingSessionAtom,
+  isFetchingUserInfoAtom,
+  loginStatusAtom,
+  userInfoAtom,
+} from '../stores/userAtom';
 
 // ログインしていなくてもアクセスできるページ
 const publicPaths = ['/signin', '/signup'];
@@ -20,6 +25,11 @@ function AuthWrapper() {
   // ログインユーザーの情報(未取得の間は null)
   const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
+  // 呼び出し中フラグ用の jotai ストア。
+  // useAtom の値はレンダー時点のスナップショットで、同じコミット内の2回目の実行では
+  // まだ false のままとなり重複を防げないため、同期的に読み書きできる store を直接使う
+  const store = useStore();
+
   // 現在のパスが「未ログインでも見られるページ」かどうか
   const isPublicPage = publicPaths.includes(location.pathname);
 
@@ -28,6 +38,14 @@ function AuthWrapper() {
     if (loginStatus !== 'unchecked') {
       return;
     }
+
+    // 既に誰かが呼び出し中なら、後から来たこちらは呼び出さない
+    if (store.get(isCheckingSessionAtom)) {
+      return;
+    }
+
+    // 先に呼び出す側としてフラグを立てる
+    store.set(isCheckingSessionAtom, true);
 
     async function fetchLoginStatus() {
       try {
@@ -42,17 +60,27 @@ function AuthWrapper() {
         // /500 に飛ばされ続けて開発が進まないため、一旦ここでログイン済み・未ログインの扱いにしている。
         // API実装後は削除し、上の navigate('/500') に戻す。
         setLoginStatus('loggedIn');
+      } finally {
+        store.set(isCheckingSessionAtom, false);
       }
     }
 
     fetchLoginStatus();
-  }, [loginStatus, setLoginStatus, navigate]);
+  }, [loginStatus, setLoginStatus, navigate, store]);
 
   // 2. ログイン済みと分かったら、続けてユーザー情報を取得する
   useEffect(() => {
     if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
     }
+
+    // 既に誰かが呼び出し中なら、後から来たこちらは呼び出さない
+    if (store.get(isFetchingUserInfoAtom)) {
+      return;
+    }
+
+    // 先に呼び出す側としてフラグを立てる
+    store.set(isFetchingUserInfoAtom, true);
 
     async function fetchUserInfo() {
       try {
@@ -75,11 +103,21 @@ function AuthWrapper() {
         // /500 に飛ばされ続けて開発が進まないため、一旦ダミーのユーザー情報をセットしている。
         // API実装後は削除し、上の navigate('/500') に戻す。
         setUserInfo({ userId: 0, userName: 'dummy', rate: 1500 });
+      } finally {
+        store.set(isFetchingUserInfoAtom, false);
       }
     }
 
     fetchUserInfo();
-  }, [loginStatus, userInfo, setLoginStatus, setUserInfo, navigate]);
+  }, [
+    loginStatus,
+    isPublicPage,
+    userInfo,
+    setLoginStatus,
+    setUserInfo,
+    navigate,
+    store,
+  ]);
 
   // ログイン状態がまだ確認できていない間は何も描画しない(画面のちらつき防止)
   if (loginStatus === 'unchecked') {

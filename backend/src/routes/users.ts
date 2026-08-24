@@ -72,12 +72,12 @@ export const users = new Hono<UserEnv>()
 
     // ユーザー情報取得
     const userStatus = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
       select: { id: true, userName: true, rate: true, deleteMarker: true },
     });
 
-    // ユーザー情報なし&削除マーカーが0以外なら401エラー
-    if (!userStatus || userStatus.deleteMarker !== DELETE_MARKER_ACTIVE) {
+    // ユーザー情報なし
+    if (!userStatus) {
       throw new HTTPException(401, { message: 'ログインしていません。' });
     }
 
