@@ -25,9 +25,6 @@ function AuthWrapper() {
   // ログインユーザーの情報(未取得の間は null)
   const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
-  // 呼び出し中フラグ用の jotai ストア。
-  // useAtom の値はレンダー時点のスナップショットで、同じコミット内の2回目の実行では
-  // まだ false のままとなり重複を防げないため、同期的に読み書きできる store を直接使う
   const store = useStore();
 
   // 現在のパスが「未ログインでも見られるページ」かどうか
