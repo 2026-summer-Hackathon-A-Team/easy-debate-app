@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { Debate } from '../Debate.js';
 import { debates, userDebateIds } from '../stores/user-debate.js';
 import { requestTopic } from '../ai/topic.js';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 /**
  * マッチング待機中ユーザー情報
@@ -70,6 +71,13 @@ const MORAL_SCORE_TOLERANCES = [100, 200, 300, Infinity] as const;
 const MATCH_CONFIRM_TIMEOUT_MS = 20_000;
 
 /**
+ * モラルスコア許容差を一段階広げるまでの待機時間（ミリ秒）
+ *
+ * @defaultValue 10_000
+ */
+const MORAL_SCORE_TOLERANCE_STEP_MS = 10_000;
+
+/**
  * ユーザーがすでにマッチング処理中か判定
  *
  * 待機中またはマッチング確認待ちのどちらかであればtrue
@@ -99,8 +107,16 @@ const TOTAL_TURN = 10;
  *
  * @returns マッチング相手・見つからない場合はundefined
  */
-const findMatchedUser = (me: WaitingUser): WaitingUser | undefined => {
-  for (const tolerance of MORAL_SCORE_TOLERANCES) {
+const findMatchedUser = async (
+  me: WaitingUser,
+): Promise<WaitingUser | undefined> => {
+  for (const [index, tolerance] of MORAL_SCORE_TOLERANCES.entries()) {
+    // 1段階目は即実行・2段階目は10秒待機
+    if (index > 0) {
+      await sleep(MORAL_SCORE_TOLERANCE_STEP_MS);
+      // 待機中に切断・マッチ済みになっていれば中断
+      if (waitingUsers.get(me.userId) !== me) return undefined;
+    }
     // 現時点でレートが近い候補を代入する変数
     let match: WaitingUser | undefined;
     // 最初の候補が必ず代入されるようにInfinityを設定
@@ -265,7 +281,7 @@ export const matchStandbyHandler = async (
   waitingUsers.set(userId, waitingUser);
 
   /** マッチした相手ユーザー */
-  const matchedUser = findMatchedUser(waitingUser);
+  const matchedUser = await findMatchedUser(waitingUser);
 
   // マッチしなければ、そのまま待機
   if (matchedUser === undefined) {
