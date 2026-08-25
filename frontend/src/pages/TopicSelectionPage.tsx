@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useAtom, useAtomValue } from 'jotai';
 
 import CardLayout from '../Layouts/CardLayout';
 import Heading from '../components/Heading';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { socket } from '../socket/socket';
-import { deadlineAtom, remainingSecondsAtom } from '../stores/timerAtom';
+import useCountdownTimer from '../hooks/useCountdownTimer';
 import type { MatchComplete } from '../types/socket/matchComplete';
 import type { TopicChangeRequest } from '../types/socket/topicChangeRequest';
 import type { TopicChangeResult } from '../types/socket/topicChangeResult';
@@ -23,36 +22,23 @@ function TopicSelectionPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [deadline, setDeadline] = useAtom(deadlineAtom);
-  // 回答期限までの残り秒数。deadlineAtomを起点にSocketManagerが1秒ごとに更新する
-  const remainingSeconds = useAtomValue(remainingSecondsAtom);
-
   // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
-  // 画面リロード時もこの導線を通るため、直接URLアクセス（stateが無い場合）は不正アクセスとして扱う
-  // TODO: 動作確認用のフォールバックを削除したら、以下の本来のコードに戻す
-  // const { topic, answerDeadline } = location.state as MatchComplete;
+  // 画面リロード時・直接URLアクセス時はまだstateが無いため、SocketManagerがsync:resultを
+  // 受け取って改めてnavigateしてくるまで何も描画しない
+  const state = location.state as MatchComplete | null;
 
-  // TODO: 動作確認用。バックエンド未実装で正規の導線を通れないため、
-  // stateが無い場合のみ仮の値で補っている。確認が終わったら上のコメントアウトを外し、この下を削除する
-  const [fallbackState] = useState<MatchComplete>(() => ({
-    topic: '仮のお題',
-    answerDeadline: new Date(Date.now() + 10_000).toISOString(),
-  }));
-  const { topic, answerDeadline } =
-    (location.state as MatchComplete | null) ?? fallbackState;
+  // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  const remainingSeconds = useCountdownTimer(
+    state?.answerDeadline ?? new Date(0).toISOString(),
+  );
 
   // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
   const [isAnswered, setIsAnswered] = useState(false);
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
-  // 回答期限が0になったか（カウントダウン未開始の場合はfalse扱い）
-  const isTimeUp = deadline !== null && remainingSeconds <= 0;
-
-  // 遷移時に渡された回答期限でカウントダウンを開始する
-  useEffect(() => {
-    setDeadline(answerDeadline);
-  }, [answerDeadline, setDeadline]);
+  // 回答期限が0になったか
+  const isTimeUp = remainingSeconds <= 0;
 
   // 両者の回答が揃った場合と、相手が離脱した場合を監視する
   useEffect(() => {
@@ -113,6 +99,13 @@ function TopicSelectionPage() {
   function handleGoToHome() {
     navigate('/');
   }
+
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  if (!state) {
+    return null;
+  }
+
+  const { topic } = state;
 
   return (
     <>
