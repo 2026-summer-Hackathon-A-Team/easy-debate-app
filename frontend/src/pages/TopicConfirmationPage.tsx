@@ -29,17 +29,15 @@ function TopicConfirmationPage() {
 
   const userInfo = useAtomValue(userInfoAtom);
 
-  // TopicSelectionPage(topic:anyChangeResult)からnavigateのstateで渡ってくる値。
-  // 画面リロード時もこの導線を通るため、直接URLアクセス（stateが無い場合）は不正アクセスとして扱う
-  const { topic, isChangeTopic, answerDeadline, users } =
-    location.state as TopicChangeResult;
+  // TopicSelectionPage(topic:anyChangeResult)またはSocketManager(sync:result)から
+  // navigateのstateで渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  const state = location.state as TopicChangeResult | null;
 
-  // 回答期限までの残り秒数
-  const remainingSeconds = useCountdownTimer(answerDeadline);
-
-  const me = users.find((user) => user.userId === userInfo?.userId) ?? users[0];
-  const opponent =
-    users.find((user) => user.userId !== userInfo?.userId) ?? users[1];
+  // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  const remainingSeconds = useCountdownTimer(
+    state?.answerDeadline ?? new Date(0).toISOString(),
+  );
 
   // ディベート開始の準備完了を回答済みか(ボタンを押したら再度押せなくする)
   const [isReady, setIsReady] = useState(false);
@@ -107,6 +105,16 @@ function TopicConfirmationPage() {
     navigate('/');
   }
 
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  if (!state) {
+    return null;
+  }
+
+  const { topic, isChangeTopic, users } = state;
+  const me = users.find((user) => user.userId === userInfo?.userId) ?? users[0];
+  const opponent =
+    users.find((user) => user.userId !== userInfo?.userId) ?? users[1];
+
   return (
     <>
       <CardLayout>
@@ -172,7 +180,7 @@ function TopicConfirmationPage() {
           )}
 
           <Button
-            className="mt-4 w-full"
+            className="mt-8 w-full"
             disabled={isReady}
             onClick={handleReady}
           >

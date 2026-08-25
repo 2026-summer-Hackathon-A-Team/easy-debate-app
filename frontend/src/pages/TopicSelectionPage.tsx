@@ -23,11 +23,14 @@ function TopicSelectionPage() {
   const navigate = useNavigate();
 
   // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
-  // 画面リロード時もこの導線を通るため、直接URLアクセス（stateが無い場合）は不正アクセスとして扱う
-  const { topic, answerDeadline } = location.state as MatchComplete;
+  // 画面リロード時・直接URLアクセス時はまだstateが無いため、SocketManagerがsync:resultを
+  // 受け取って改めてnavigateしてくるまで何も描画しない
+  const state = location.state as MatchComplete | null;
 
-  // 回答期限までの残り秒数
-  const remainingSeconds = useCountdownTimer(answerDeadline);
+  // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  const remainingSeconds = useCountdownTimer(
+    state?.answerDeadline ?? new Date(0).toISOString(),
+  );
 
   // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
   const [isAnswered, setIsAnswered] = useState(false);
@@ -96,6 +99,13 @@ function TopicSelectionPage() {
   function handleGoToHome() {
     navigate('/');
   }
+
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  if (!state) {
+    return null;
+  }
+
+  const { topic } = state;
 
   return (
     <>
