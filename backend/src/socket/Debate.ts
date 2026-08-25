@@ -64,11 +64,11 @@ export class Debate {
   chatHistory: { userId: number; chatMsg: string }[];
   /** お礼履歴 */
   thanksHistory: { userId: number; thanksMsg: string }[];
+  /** 勝敗表示開始時刻 */
+  judgeDisplayStartAt?: Date;
 
   /** 勝敗判定結果 */
   judge?: {
-    /** 勝敗表示開始時刻 */
-    judgeDisplayStartAt?: Date;
     /** 勝敗確認期限 */
     judgeConfirmDeadline: Date;
     /** 勝敗理由 */
@@ -140,3 +140,22 @@ export class Debate {
     };
   }
 }
+
+/**
+ * JUDGE_WAITING / JUDGE判定処理
+ *
+ * フロントの画面の状態をjudgeDisplayStartAtの経過時間で判定する
+ */
+export const resolveJudgePhase = (
+  debate: Debate,
+  now: number,
+): 'JUDGE_WAITING' | 'JUDGE' => {
+  // judgeがまだ無い（AI判定中）
+  if (debate.judge === undefined) return 'JUDGE_WAITING';
+  // judgeDisplayStartAtが無い
+  if (debate.judgeDisplayStartAt === undefined) return 'JUDGE';
+  // 現在時刻 < judgeDisplayStartAt
+  if (now < debate.judgeDisplayStartAt.getTime()) return 'JUDGE_WAITING';
+  // 現在時刻 >= judgeDisplayStartAt
+  return 'JUDGE';
+};
