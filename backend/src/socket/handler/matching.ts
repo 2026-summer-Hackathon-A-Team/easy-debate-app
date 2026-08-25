@@ -31,8 +31,6 @@ type MatchingRoom = {
   userIds: [number, number];
   /** `match:isConfirm`を送ったユーザーID */
   confirmedUserIds: Set<number>;
-  /** お題生成中フラグ match:isConfirm再送による二重実行を防ぐ */
-  topicGenerating: boolean;
 };
 
 /**
@@ -306,7 +304,6 @@ export const matchStandbyHandler = async (
   matchingRooms.set(debateId, {
     userIds: [userId, matchedUser.userId],
     confirmedUserIds: new Set(),
-    topicGenerating: false,
   });
 
   // マッチした2名を同じRoomへ
@@ -356,13 +353,9 @@ export const matchIsConfirmHandler = async (
   // 2名揃うまで待つ
   if (room.confirmedUserIds.size < 2) return;
 
-  // すでにお題生成中なら何もしない（二重送信防止）
-  if (room.topicGenerating) return;
-  // 2名揃ったらお題生成中フラグをtrueへ
-  room.topicGenerating = true;
-
   // 2名揃ったらタイマー停止・マッチング確認待ちオブジェクトから削除
   stopMatchConfirmTimer(debateId);
+  matchingRooms.delete(debateId);
   /**
    * お題・ポジション・先行後攻を取得
    *
@@ -376,8 +369,6 @@ export const matchIsConfirmHandler = async (
       positionB: 'Macが優れている',
     };
   });
-  // マッチング確認待ちオブジェクトから削除
-  matchingRooms.delete(debateId);
 
   /** 回答期限
    *
