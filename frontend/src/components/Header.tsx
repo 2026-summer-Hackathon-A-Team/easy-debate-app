@@ -11,6 +11,7 @@ import {
   loginStatusAtom,
   userInfoAtom,
 } from '../stores/userAtom';
+import { signout } from '../api/authApi';
 
 // ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
 const publicPaths = ['/signin', '/signup'];
