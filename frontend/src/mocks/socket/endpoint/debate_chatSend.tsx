@@ -36,8 +36,6 @@ const debateChatSend: ScenarioHandler = (server) => {
   };
   server.emit('debate:chatReceive', payload, 1000);
 
-  // 10ターン終了で勝敗判定へ進むケースを試したい場合はコメントを外す
-  // (judge:result のペイロードは未定義のため、決まり次第ここに書く)
   // server.emit('judge:result', undefined, 3000);
 
   const now = Date.now();

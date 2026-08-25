@@ -103,7 +103,7 @@ function Header() {
         {loginStatus === 'loggedIn' && (
           <div className="flex items-center gap-2.5">
             {userInfo && (
-              <div className="rounded-full border border-[#cfe1d6] bg-[#e7f0ea] px-3.5 py-1.5 text-sm text-[#232823]">
+              <div className="font-medium rounded-full border border-[#cfe1d6] bg-[#e7f0ea] px-3.5 py-1.5 text-sm text-[#232823]">
                 レート {userInfo.rate}
               </div>
             )}
