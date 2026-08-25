@@ -33,12 +33,22 @@ export const createSocketServer = (httpServer: HTTPServer): AppServer => {
   // ルーティング処理
   io.use(socketAuth);
 
-  io.on('connection', (socket) => {
-    // 例外が投げられたら接続を切る
-    onConnection(io, socket).catch((e) => {
+  io.on('connection', async (socket) => {
+    try {
+      // 例外が投げられたら接続を切る
+      await onConnection(io, socket);
+    } catch (e) {
       console.error(e);
       socket.disconnect(true);
-    });
+    }
   });
   return io;
 };
+
+process.on('unhandledRejection', (reason) => {
+  console.error('unhandledRejection', reason);
+});
+process.on('uncaughtException', (e) => {
+  console.error('uncaughtException', e);
+  process.exit(1);
+});

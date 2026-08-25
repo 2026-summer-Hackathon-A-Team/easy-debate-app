@@ -1,5 +1,9 @@
 import { Socket } from 'socket.io';
-import type { MatchComplete, SyncResult } from './phase.js';
+import type {
+  MatchComplete,
+  SyncResult,
+  TopicAnyChangeResult,
+} from './phase.js';
 
 export interface SocketData {
   userId: number;
@@ -12,6 +16,8 @@ export interface ClientToServerEvents {
   'match:standby': () => void;
   // マッチング完了の合図
   'match:isConfirm': () => void;
+  // お題チェンジの有無を送信
+  'topic:anyChangeRequest': (data: { isHopeChangeTopic: boolean }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -21,6 +27,8 @@ export interface ServerToClientEvents {
   'match:isFound': () => void;
   // 両者マッチング確認を完了
   'match:complete': (data: MatchComplete) => void;
+  // お題チェンジの結果を送信
+  'topic:anyChangeResult': (data: TopicAnyChangeResult) => void;
 }
 
 export interface InterServerEvents {}
