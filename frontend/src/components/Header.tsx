@@ -7,6 +7,7 @@ import logo from '../assets/easy-debate-logo.png';
 import Heading from '../components/Heading';
 import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
+import { signout } from '../api/authApi';
 import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
 
 // ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
@@ -68,13 +69,60 @@ function Header() {
     store,
   ]);
 
+  // 成功でも失敗でもログインステータス・ユーザー情報を初期化してログイン画面へ戻す
+  async function handleLogout() {
+    try {
+      await signout();
+    } catch {
+      // ログアウト自体は続行するので、ここでのエラーは無視する
+    } finally {
+      setLoginStatus('loggedOut');
+      setUserInfo(null);
+      navigate('/signin');
+    }
+  }
+
   return (
     <header className="bg-white border-b border-[#e4e2dd]">
-      <div className="mx-auto h-16 flex flex-raw items-center px-5">
-        <img className="flex w-10 h-10" src={logo} alt="easy-debate-app-logo" />
-        <Heading level={2} className="flex ml-3">
-          やさしいディベート
-        </Heading>
+      <div className="mx-auto flex flex-wrap items-center justify-between gap-y-2 px-5 py-3.5">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="flex items-center cursor-pointer"
+        >
+          <img
+            className="flex w-10 h-10"
+            src={logo}
+            alt="easy-debate-app-logo"
+          />
+          <Heading level={2} className="flex ml-3">
+            やさしいディベート
+          </Heading>
+        </button>
+
+        {loginStatus === 'loggedIn' && (
+          <div className="flex items-center gap-2.5">
+            {userInfo && (
+              <div className="rounded-full border border-[#cfe1d6] bg-[#e7f0ea] px-3.5 py-1.5 text-sm text-[#232823]">
+                レート {userInfo.rate}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="rounded-[10px] border border-[#e4e2dd] bg-white px-4 py-2 text-[13px] font-bold text-[#6f766f] cursor-pointer"
+            >
+              プロフィール
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-[10px] border border-[#e4e2dd] bg-white px-4 py-2 text-[13px] font-bold text-[#6f766f] cursor-pointer"
+            >
+              ログアウト
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
