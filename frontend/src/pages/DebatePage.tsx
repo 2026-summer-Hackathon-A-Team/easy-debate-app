@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAtomValue } from 'jotai';
 
-import CardLayout from '../Layouts/CardLayout';
-import Heading from '../components/Heading';
 import Button from '../components/Button';
 import TextField from '../components/TextField';
 import { socket } from '../socket/socket';
@@ -134,27 +132,13 @@ function DebatePage() {
     socket.emit('debate:chatSend', payload);
     setIsSending(true);
   }
-  // isTimeUp中は次の応答が来るまで入力できないようにする(タイムアウト自動送信の二重送信防止)
-  const isInputDisabled = !isMyTurn || isSending || isTimeUp;
+  // isTimeUp中・判定結果待機中は次に進めないようにする(タイムアウト自動送信の二重送信防止)
+  const isInputDisabled =
+    !isMyTurn || isSending || isTimeUp || pendingJudgeResult !== null;
 
   // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
   if (!debate) {
     return null;
-  }
-
-  // 判定結果の表示待機中は、相手の最後のチャットを確認できるようこの画面のまま
-  // 待機中のレイアウトへ変更する(遷移はjudgeWaitRemainingSecondsのuseEffectで行う)
-  if (pendingJudgeResult) {
-    return (
-      <CardLayout>
-        <div className="flex flex-col items-center">
-          <div className="h-16 w-16 animate-spin rounded-full border-5 border-[#cfe1d6] border-t-[#4c7e63]" />
-          <Heading level={1} className="mt-5">
-            まもなく判定結果が表示されます…
-          </Heading>
-        </div>
-      </CardLayout>
-    );
   }
 
   const me = debate.users.find((user) => user.userId === userInfo?.userId) ??
@@ -179,9 +163,9 @@ function DebatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-5 pt-10 pb-15">
+    <div className="max-w-5xl mx-auto px-5 pt-10 pb-15">
       <div className="flex flex-col md:flex-row gap-5 items-start">
-        <div className="flex flex-col gap-3.5 w-full md:w-57.5 md:flex-shrink-0">
+        <div className="flex flex-col gap-3.5 w-full md:w-72 md:flex-shrink-0">
           <div className="bg-white border border-[#e4e2dd] rounded-2xl p-5 text-center">
             <div className="text-xs font-extrabold text-[#4c7e63]">
               お題
@@ -208,21 +192,32 @@ function DebatePage() {
           </div>
 
           <div className="bg-white border border-[#e4e2dd] rounded-2xl p-5 text-center">
-            <div className="text-xs font-bold text-[#8a8f89] mb-1.5">
-              {isMyTurn ? 'あなたのターン' : '相手のターン'}
-            </div>
-            <div className="text-3xl font-extrabold text-[#232823]">
-              {remainingSeconds}秒
-            </div>
-            <div className="mt-3.5 flex justify-center gap-1">
-              {Array.from({ length: debate.turn.totalTurn }, (_, i) => (
-                <span
-                  key={i}
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: turnDotColor(i + 1) }}
-                />
-              ))}
-            </div>
+            {pendingJudgeResult ? (
+              <>
+                <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-[#cfe1d6] border-t-[#4c7e63]" />
+                <div className="mt-3 text-xs font-bold text-[#8a8f89]">
+                  まもなく判定結果が表示されます…
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-xs font-bold text-[#8a8f89] mb-1.5">
+                  {isMyTurn ? 'あなたのターン' : '相手のターン'}
+                </div>
+                <div className="text-3xl font-extrabold text-[#232823]">
+                  {remainingSeconds}秒
+                </div>
+                <div className="mt-3.5 flex justify-center gap-1">
+                  {Array.from({ length: debate.turn.totalTurn }, (_, i) => (
+                    <span
+                      key={i}
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: turnDotColor(i + 1) }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -261,7 +256,11 @@ function DebatePage() {
               disabled={isInputDisabled}
               maxLength={500}
               placeholder={
-                isMyTurn ? '主張を入力（Enterで送信）' : '相手のターンです…'
+                pendingJudgeResult
+                  ? '判定結果を待っています…'
+                  : isMyTurn
+                    ? '主張を入力（Enterで送信）'
+                    : '相手のターンです…'
               }
               className="flex-1 rounded-xl border-[#e4e2dd] px-3.5 py-3 text-sm focus:border-[#4c7e63]"
             />

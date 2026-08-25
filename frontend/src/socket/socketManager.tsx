@@ -51,9 +51,30 @@ function SocketManager() {
         return;
       }
 
-      // JUDGE_WAITING(判定待ち)はまだ判定結果が揃っていないため、stateを渡さずに
-      // 遷移するだけにする。判定結果自体はJudgeResultPageがjudge:resultを直接受け取って表示する
+      // JUDGE_WAITING(判定待ち)は、判定自体は既に完了していて相手の最後のチャットを
+      // 確認してもらうために15秒ステイしているだけなので、judgeが含まれていればそれを
+      // 使って遷移する(不戦敗を経由しないフェーズなので違反は無し扱いで組み立てる)。
+      // 稀にjudgeがまだ無い場合のみstateを渡さずに遷移し、JudgeResultPageが
+      // judge:resultを直接受け取るのを待つ
       if (data.phase === 'JUDGE_WAITING') {
+        if (data.judge) {
+          navigate('/debates/judge', {
+            state: {
+              judgeDisplayStartAt: data.judge.judgeDisplayStartAt,
+              judgeConfirmDeadline: data.judge.judgeConfirmDeadline,
+              judgeReason: data.judge.judgeReason,
+              users: data.judge.users,
+              thanks: data.judge.thanks,
+              violation: {
+                isMoralViolationOfBattle: false,
+                is2NoChat: false,
+                isLeave: false,
+              },
+            },
+          });
+          return;
+        }
+
         navigate('/debates/judge');
         return;
       }
