@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAtom, useStore } from 'jotai';
-import { isFetchingUserInfoAtom } from '../stores/userAtom';
 
 import logo from '../assets/easy-debate-logo.png';
 import Heading from '../components/Heading';
 import ApiError from '../api/apiError';
 import { getUserInfo } from '../api/userApi';
-import { signout } from '../api/authApi';
-import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
+import {
+  isFetchingUserInfoAtom,
+  loginStatusAtom,
+  userInfoAtom,
+} from '../stores/userAtom';
 
 // ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
 const publicPaths = ['/signin', '/signup'];
