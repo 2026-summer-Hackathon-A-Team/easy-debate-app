@@ -7,18 +7,12 @@ import TextField from '../components/TextField';
 import { socket } from '../socket/socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
 import { userInfoAtom } from '../stores/userAtom';
-import type { ChatHistoryItem, JoinUser, TurnInfo } from '../types/sync/common';
 import type { DebateStart } from '../types/socket/debateStart';
 import type { DebateChatSend } from '../types/socket/debateChatSend';
 import type { DebateChatReceive } from '../types/socket/debateChatReceive';
 import type { JudgeResult } from '../types/socket/judgeResult';
 
-type DebateState = {
-  topic: string;
-  users: [JoinUser, JoinUser];
-  turn: TurnInfo;
-  chatHistory: ChatHistoryItem[];
-};
+type DebateState = DebateStart;
 
 function DebatePage() {
   const location = useLocation();
@@ -29,21 +23,13 @@ function DebatePage() {
   // TopicConfirmationPage(debate:start)またはSocketManager(sync:result)からnavigateの
   // stateで渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
   // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
-  const initial = location.state as DebateStart | null;
+  const initialDebate = location.state as DebateState | null;
 
-  const [debate, setDebate] = useState<DebateState | null>(() =>
-    initial && {
-      topic: initial.topic,
-      users: initial.users,
-      turn: initial.turn,
-      chatHistory: initial.chatHistory,
-    },
+  const [debate, setDebate] = useState(initialDebate);
+  // 発言期限までの残り秒数(debateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  const remainingSeconds = useCountdownTimer(
+    debate?.chatSubmitDeadline ?? new Date(0).toISOString(),
   );
-  const [chatSubmitDeadline, setChatSubmitDeadline] = useState(
-    () => initial?.chatSubmitDeadline ?? new Date(0).toISOString(),
-  );
-  // 発言期限までの残り秒数
-  const remainingSeconds = useCountdownTimer(chatSubmitDeadline);
   const [chatInput, setChatInput] = useState('');
   // 送信済みで相手からの応答待ちか
   const [isSending, setIsSending] = useState(false);
@@ -64,13 +50,7 @@ function DebatePage() {
   // チャットの応答と勝敗判定結果を監視する
   useEffect(() => {
     function handleChatReceive(data: DebateChatReceive) {
-      setDebate({
-        topic: data.topic,
-        users: data.users,
-        turn: data.turn,
-        chatHistory: data.chatHistory,
-      });
-      setChatSubmitDeadline(data.chatSubmitDeadline);
+      setDebate(data);
       setChatInput('');
       setIsSending(false);
     }
@@ -99,7 +79,7 @@ function DebatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-    // 発言期限が切れたら、入力中の内容(空でも)をそのまま自動送信する。
+  // 発言期限が切れたら、入力中の内容(空でも)をそのまま自動送信する。
   // 送信結果のstate更新はdebate:chatReceive側で行うため、ここではsocket.emitのみ行う
   useEffect(() => {
     if (isMyTurn && !isSending && isTimeUp) {
@@ -141,11 +121,12 @@ function DebatePage() {
     return null;
   }
 
-  const me = debate.users.find((user) => user.userId === userInfo?.userId) ??
+  const me =
+    debate.users.find((user) => user.userId === userInfo?.userId) ??
     debate.users[0];
-  const opponent = debate.users.find(
-    (user) => user.userId !== userInfo?.userId,
-  ) ?? debate.users[1];
+  const opponent =
+    debate.users.find((user) => user.userId !== userInfo?.userId) ??
+    debate.users[1];
 
   // ターン進捗ドット1つぶんの色を決める
   // (完了済みは実際に発言したユーザー、現在のターンは今の手番のユーザーの色にする)
@@ -167,9 +148,7 @@ function DebatePage() {
       <div className="flex flex-col md:flex-row gap-5 items-start">
         <div className="flex flex-col gap-3.5 w-full md:w-72 md:flex-shrink-0">
           <div className="bg-white border border-[#e4e2dd] rounded-2xl p-5 text-center">
-            <div className="text-xs font-extrabold text-[#4c7e63]">
-              お題
-            </div>
+            <div className="text-xs font-extrabold text-[#4c7e63]">お題</div>
             <div className="mt-2 text-base font-bold text-[#232823]">
               {debate.topic}
             </div>

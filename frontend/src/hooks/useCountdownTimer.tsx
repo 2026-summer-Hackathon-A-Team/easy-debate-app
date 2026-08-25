@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 
-// deadlineまでの残り秒数を1秒ごとに再計算して返す
+import { getServerNow } from '../socket/clockOffset';
+
+// deadlineまでの残り秒数を1秒ごとに再計算して返す。
+// 端末ごとのシステムクロックのズレで表示が数秒ずれるのを避けるため、Date.now()ではなく
+// サーバー時計に換算したgetServerNow()を基準に計算する
 function useCountdownTimer(deadline: string): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => getServerNow());
 
   useEffect(() => {
     // 既に期限を過ぎている場合はタイマーを開始しない
-    if (new Date(deadline).getTime() - Date.now() <= 0) {
+    if (new Date(deadline).getTime() - getServerNow() <= 0) {
       return;
     }
 
     const timerId = setInterval(() => {
-      const tickNow = Date.now();
+      const tickNow = getServerNow();
 
       setNow(tickNow);
 
@@ -26,7 +30,7 @@ function useCountdownTimer(deadline: string): number {
 
   const remainingMs = new Date(deadline).getTime() - now;
 
-  return Math.max(0, Math.ceil(remainingMs / 1000));
+  return Math.max(0, Math.floor(remainingMs / 1000));
 }
 
 export default useCountdownTimer;

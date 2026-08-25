@@ -24,8 +24,11 @@ function TopicSelectionPage() {
 
   // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
   // 画面リロード時・直接URLアクセス時はまだstateが無いため、SocketManagerがsync:resultを
-  // 受け取って改めてnavigateしてくるまで何も描画しない
-  const state = location.state as MatchComplete | null;
+  // 受け取って改めてnavigateしてくるまで何も描画しない。
+  // isAnsweredはSocketManager(sync:result)経由の場合のみ含まれ、リロード時に
+  // 回答済み状態を復元して二重回答を防ぐために使う
+  const state = location.state as
+    (MatchComplete & { isAnswered?: boolean }) | null;
 
   // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
   const remainingSeconds = useCountdownTimer(
@@ -33,7 +36,9 @@ function TopicSelectionPage() {
   );
 
   // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
-  const [isAnswered, setIsAnswered] = useState(false);
+  const [isAnswered, setIsAnswered] = useState(
+    () => state?.isAnswered ?? false,
+  );
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
@@ -44,14 +49,7 @@ function TopicSelectionPage() {
   useEffect(() => {
     function handleAnyChangeResult(data: TopicChangeResult) {
       // カウントダウンの開始（setDeadline）は遷移先のTopicConfirmationPageの初期処理で行う
-      navigate('/debates/topic-confirmation', {
-        state: {
-          topic: data.topic,
-          isChangeTopic: data.isChangeTopic,
-          answerDeadline: data.answerDeadline,
-          users: data.users,
-        },
-      });
+      navigate('/debates/topic-confirmation', { state: data });
     }
 
     function handleOpponentLeave() {

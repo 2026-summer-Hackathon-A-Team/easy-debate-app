@@ -16,10 +16,8 @@ function MatchingPage() {
 
     // 両者がマッチングを確認できたら、仮のお題と回答期限を渡してお題選定画面へ遷移する。
     // カウントダウンの開始は遷移先で初期処理で行う
-    function handleMatchComplete({ topic, answerDeadline }: MatchComplete) {
-      navigate('/debates/topic-selection', {
-        state: { topic, answerDeadline },
-      });
+    function handleMatchComplete(data: MatchComplete) {
+      navigate('/debates/topic-selection', { state: data });
     }
 
     // Socket接続

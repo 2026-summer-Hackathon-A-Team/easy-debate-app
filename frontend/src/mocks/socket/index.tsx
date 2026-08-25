@@ -6,6 +6,7 @@ import { matchStandby } from './endpoint/match_standby';
 import { rematchAnyRequest } from './endpoint/rematch_anyRequest';
 import { syncRequest } from './endpoint/sync_request';
 import { thanksSend } from './endpoint/thanks_send';
+import { timeSync } from './endpoint/time_sync';
 import { topicAnyChangeRequest } from './endpoint/topic_anyChangeRequest';
 
 /**
@@ -20,6 +21,7 @@ import { topicAnyChangeRequest } from './endpoint/topic_anyChangeRequest';
  * 上記のルールで endpoint/ にファイルを1つ作り、下記に1行追加
  */
 const socketScenario: Record<string, ScenarioHandler> = {
+  'time:sync': timeSync,
   'sync:request': syncRequest,
   'match:standby': matchStandby,
   'match:isConfirm': matchIsConfirm,
