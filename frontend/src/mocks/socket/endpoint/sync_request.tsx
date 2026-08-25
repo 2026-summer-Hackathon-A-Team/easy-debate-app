@@ -118,7 +118,7 @@ const syncResultSamples: Record<string, () => SyncResult> = {
   }),
 
   // 勝敗判定画面(対戦中のモラル違反による不戦勝。お礼と再対戦の受付なし)
-  judgeMoralViolationOfButtle: () => ({
+  judgeMoralViolationOfBattle: () => ({
     phase: 'JUDGE',
     judge: {
       judgeDisplayStartAt: afterSeconds(-judgeDisplayWaitSec),
@@ -129,7 +129,7 @@ const syncResultSamples: Record<string, () => SyncResult> = {
     },
     violation: {
       ...noViolation,
-      isMoralViolationOfButtle: true,
+      isMoralViolationOfBattle: true,
       violationUserId: opponentUserId,
     },
   }),
@@ -251,7 +251,7 @@ const judgeReason = '再反論の一貫性で上回っていたため、勝者�
 
 // 違反なし
 const noViolation: Violation = {
-  isMoralViolationOfButtle: false,
+  isMoralViolationOfBattle: false,
   is2NoChat: false,
   isLeave: false,
   isMoralViolationOfThanks: false,

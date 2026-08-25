@@ -52,4 +52,15 @@ async function signin(data: SigninRequest): Promise<void> {
   throw new ApiError(response.status, 'ログインに失敗しました');
 }
 
-export { checkSession, signin };
+// ログアウトする。サーバー側のセッションを破棄する(レスポンスボディは無し)。
+async function signout(): Promise<void> {
+  const response = await client.api.v1.auth.signout.$post();
+
+  if (response.status === 204) {
+    return;
+  }
+
+  throw new ApiError(response.status, 'ログアウトに失敗しました');
+}
+
+export { checkSession, signin, signout };
