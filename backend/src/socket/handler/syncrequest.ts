@@ -3,14 +3,14 @@ import { userDebateIds, debates } from '../stores/user-debate.js';
 import { type Debate, resolveJudgePhase } from '../Debate.js';
 
 /**
- * ディベートインスタンスと参加ユーザー取得処理
+ * リクエストユーザーのディベート情報取得
  *
- * ディベートIDから、そのディベートに参加しているユーザーとディベートインスタンスを取得する
+ * ディベートIDとユーザーIDをもとに、ディベートインスタンスとリクエストしてきたユーザー情報を取得する
  *
  * @param debateId ディベートID
  * @param userId ユーザーID
  *
- * @returns ディベートインスタンスと参加ユーザー情報
+ * @returns ディベートインスタンスとリクエストユーザー情報
  */
 export const getDebateAndJoinedUser = (debateId: string, userId: number) => {
   const debate = debates.get(debateId);
