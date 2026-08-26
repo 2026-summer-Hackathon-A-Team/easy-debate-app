@@ -7,6 +7,11 @@ import { Debate } from '../Debate.js';
 import { debates, userDebateIds } from '../stores/user-debate.js';
 import { requestTopic } from '../ai/topic.js';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { getDebateAndJoinedUser } from './syncrequest.js';
+import { z } from 'zod';
+
+/** topic:anyChangeRequestのペイロードスキーマ */
+const changeRequestSchema = z.object({ isHopeChangeTopic: z.boolean() });
 
 /**
  * マッチング待機中ユーザー情報
@@ -26,6 +31,8 @@ type MatchingRoom = {
   userIds: [number, number];
   /** `match:isConfirm`を送ったユーザーID */
   confirmedUserIds: Set<number>;
+  /** お題生成中フラグ match:isConfirm再送による二重実行を防ぐ */
+  topicGenerating: boolean;
 };
 
 /**
@@ -299,6 +306,7 @@ export const matchStandbyHandler = async (
   matchingRooms.set(debateId, {
     userIds: [userId, matchedUser.userId],
     confirmedUserIds: new Set(),
+    topicGenerating: false,
   });
 
   // マッチした2名を同じRoomへ
@@ -348,10 +356,13 @@ export const matchIsConfirmHandler = async (
   // 2名揃うまで待つ
   if (room.confirmedUserIds.size < 2) return;
 
-  // 2名揃ったらタイマー停止・マッチング確認待ちオブジェクトから削除
-  stopMatchConfirmTimer(debateId);
-  matchingRooms.delete(debateId);
+  // すでにお題生成中なら何もしない（二重送信防止）
+  if (room.topicGenerating) return;
+  // 2名揃ったらお題生成中フラグをtrueへ
+  room.topicGenerating = true;
 
+  // 2名揃ったらタイマー停止（matchingRoomsからの削除はお題生成後に実施）
+  stopMatchConfirmTimer(debateId);
   /**
    * お題・ポジション・先行後攻を取得
    *
@@ -365,6 +376,8 @@ export const matchIsConfirmHandler = async (
       positionB: 'Macが優れている',
     };
   });
+  // マッチング確認待ちオブジェクトから削除
+  matchingRooms.delete(debateId);
 
   /** 回答期限
    *
@@ -394,5 +407,94 @@ export const matchIsConfirmHandler = async (
   io.to(debateRoom(debateId)).emit('match:complete', {
     topic,
     answerDeadline: answerDeadline.toISOString(),
+  });
+};
+
+/**
+ * お題変更希望受付処理
+ *
+ * 両者がお題変更を希望した場合のみ新しいお題を取得する
+ *
+ * 回答が揃った後、DEBATE_READYへ遷移する
+ */
+export const topicAnyChangeRequestHandler = async (
+  io: AppServer,
+  socket: AppSocket,
+  data: unknown,
+): Promise<void> => {
+  const { userId } = socket.data;
+
+  const debateId = userDebateIds.get(userId);
+  if (debateId === undefined) return;
+  // ディベートとユーザー情報を取得
+  const { debate, user } = getDebateAndJoinedUser(debateId, userId);
+
+  // ユーザーがすでに回答済みなら何もしない
+  if (user.isAnswered) return;
+  // バリデーションチェック NGなら何もしない
+  const parsed = changeRequestSchema.safeParse(data);
+  if (!parsed.success) return;
+
+  // ディベートインスタンスにisAnsweredとisHopeChangeTopicの結果を追加
+  user.isAnswered = true;
+  user.isHopeChangeTopic = parsed.data.isHopeChangeTopic;
+
+  // 2名の回答を待つ
+  if (!debate.users.every((u) => u.isAnswered)) return;
+
+  // 両者が希望した場合のみお題チェンジ
+  const isChangeTopic = debate.users.every((u) => u.isHopeChangeTopic === true);
+
+  if (isChangeTopic) {
+    /**
+     * お題・ポジション・先行後攻を取得
+     *
+     * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
+     */
+    const { topic, positionA, positionB } = await requestTopic(
+      debate.topic,
+    ).catch((e) => {
+      console.error('topic generation failed', e);
+      return {
+        topic: '一生無料になるなら外食と交通費どちらを選ぶべきか?',
+        positionA: '外食を無料にするべき',
+        positionB: '交通費を無料にするべき',
+      };
+    });
+    debate.topic = topic;
+    shufflePositions(debate, positionA, positionB);
+  }
+
+  // 必須項目チェック
+  const [user0, user1] = debate.users;
+  if (
+    user0.position === undefined ||
+    user0.turn === undefined ||
+    user1.position === undefined ||
+    user1.turn === undefined
+  ) {
+    throw new Error(
+      `DEBATE_READY: required values are missing: debateId=${debateId}`,
+    );
+  }
+
+  // DEBATE_READY へ遷移
+  debate.phase = 'DEBATE_READY';
+  debate.isChangeTopic = isChangeTopic;
+  // 回答期限をセット
+  debate.answerDeadline = new Date(Date.now() + ANSWER_DEADLINE_MS);
+  for (const u of debate.users) {
+    u.isAnswered = false;
+    u.isHopeChangeTopic = undefined;
+  }
+
+  io.to(debateRoom(debateId)).emit('topic:anyChangeResult', {
+    isChangeTopic,
+    topic: debate.topic,
+    answerDeadline: debate.answerDeadline.toISOString(),
+    users: [
+      { userId: user0.userId, position: user0.position, turn: user0.turn },
+      { userId: user1.userId, position: user1.position, turn: user1.turn },
+    ],
   });
 };

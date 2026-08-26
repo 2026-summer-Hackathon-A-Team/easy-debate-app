@@ -3,9 +3,17 @@ import type { AppServer } from '../index.js';
 import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
-import { matchStandbyHandler, matchIsConfirmHandler } from './matching.js';
+import {
+  matchStandbyHandler,
+  matchIsConfirmHandler,
+  topicAnyChangeRequestHandler,
+} from './matching.js';
 import { disconnectHandler } from './disconnect.js';
 import { syncRequestHandler } from './syncrequest.js';
+import {
+  debateChatSendHandler,
+  debateIsConfirmHandler,
+} from './debatebattle.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -33,6 +41,15 @@ export const onConnection = async (
 
   // 受信イベントごとのphase検証（ハンドシェイクではない場合）
   socket.use(phaseValidation(socket));
+
+  // 現在時刻をクライアントに送信
+  socket.on('time:sync', () => {
+    try {
+      socket.emit('time:result', { serverTime: new Date().toISOString() });
+    } catch (e) {
+      console.error('time:syncの処理に失敗しました。', e);
+    }
+  });
 
   // disconnectハンドラ
   socket.on('disconnect', () => {
@@ -64,6 +81,30 @@ export const onConnection = async (
       matchIsConfirmHandler(io, socket);
     } catch (e) {
       console.error('match:isConfirmの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('topic:anyChangeRequest', async (data) => {
+    try {
+      await topicAnyChangeRequestHandler(io, socket, data);
+    } catch (e) {
+      console.error('topic:anyChangeRequestの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('debate:isConfirm', async () => {
+    try {
+      await debateIsConfirmHandler(io, socket);
+    } catch (e) {
+      console.error('debate:isConfirmの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('debate:chatSend', async (data) => {
+    try {
+      await debateChatSendHandler(io, socket, data);
+    } catch (e) {
+      console.error('debate:chatSendの処理に失敗しました。', e);
     }
   });
 };

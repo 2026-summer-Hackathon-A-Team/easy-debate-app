@@ -148,3 +148,11 @@ export type SyncResult =
 
 /** match:complete用レスポンスの型 */
 export type MatchComplete = Pick<TopicChange, 'topic' | 'answerDeadline'>;
+
+/** topic:anyChangeResult用レスポンスの型 */
+export type TopicAnyChangeResult = Pick<
+  DebateReady,
+  'isChangeTopic' | 'topic' | 'answerDeadline' | 'users'
+>;
+/** debate:startとdebate:chatReceive用レスポンスの型 */
+export type DebateState = Omit<Debate, 'phase'>;

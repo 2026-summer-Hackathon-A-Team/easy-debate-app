@@ -3,7 +3,7 @@ import { requestText } from './ai-client.js';
 import { TOPIC_SELECTION_PROMPT } from './prompt/topicprompt.js';
 
 const MODEL = 'claude-sonnet-4-6';
-const TEMPERATURE = 0.9;
+const TEMPERATURE = 1;
 const MAX_TOKENS = 1000;
 const DEFAULT_CATEGORY = 'おまかせ';
 
@@ -52,14 +52,14 @@ const parseTopicResponse = (text: string): TopicResult =>
 /**
  * お題選定処理
  *
- * @param excludeTopics 除外するお題
  * @param category カテゴリ 指定がない場合「おまかせ」
+ * @param excludeTopics 除外するお題
  *
  * 形式が不正だった場合、もう一度リクエストする
  */
 export const requestTopic = async (
-  excludeTopics?: string,
   category = DEFAULT_CATEGORY,
+  excludeTopics?: string,
 ): Promise<TopicResult> => {
   const userMessage = buildUserMessage(category, excludeTopics);
 
