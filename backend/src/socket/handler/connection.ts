@@ -3,7 +3,11 @@ import type { AppServer } from '../index.js';
 import { userRoom, debateRoom } from '../rooms.js';
 import { userDebateIds } from '../stores/user-debate.js';
 import { phaseValidation } from '../middlewares/phaseValidation.js';
-import { matchStandbyHandler, matchIsConfirmHandler } from './matching.js';
+import {
+  matchStandbyHandler,
+  matchIsConfirmHandler,
+  topicAnyChangeRequestHandler,
+} from './matching.js';
 import { disconnectHandler } from './disconnect.js';
 import { syncRequestHandler } from './syncrequest.js';
 
@@ -64,6 +68,14 @@ export const onConnection = async (
       matchIsConfirmHandler(io, socket);
     } catch (e) {
       console.error('match:isConfirmの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('topic:anyChangeRequest', async (data) => {
+    try {
+      await topicAnyChangeRequestHandler(io, socket, data);
+    } catch (e) {
+      console.error('topic:anyChangeRequestの処理に失敗しました。', e);
     }
   });
 };
