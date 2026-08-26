@@ -39,6 +39,7 @@ const buildUserMessage = (category: string, excludeTopic?: string): string => {
 ${exclude}
 </exclude_topics>
 
+「exclude_topics」は除外リストです。こちらに指定したお題と同じもの、あるいは本質的に同じものは完全に除外。
 上記を踏まえ、新しいお題を1つ生成してください。`;
 };
 
