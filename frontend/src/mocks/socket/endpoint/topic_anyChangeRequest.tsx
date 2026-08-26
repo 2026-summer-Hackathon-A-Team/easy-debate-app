@@ -26,10 +26,10 @@ const topicAnyChangeRequest: ScenarioHandler = (server) => {
       { userId: opponentUserId, position: '優れていない', turn: 'SECOND' },
     ],
   };
-  server.emit('topic:anyChangeResult', result, 1000);
+  server.emit('topic:anyChangeResult', result, 300);
 
-  // 相手が離脱するケースを試したいときはコメントを外す
-  // server.emit('topic:opponentLeave', undefined, 5000);
+  // 相手が数秒後に離脱するケースを試したいときはコメントを外す
+  // server.emit('topic:opponentLeave', undefined, 3000);
 };
 
 export { topicAnyChangeRequest };
