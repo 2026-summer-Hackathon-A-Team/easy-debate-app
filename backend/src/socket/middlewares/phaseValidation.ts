@@ -45,7 +45,7 @@ const resolveCurrentPhase = (userId: number): ValidationPhase | undefined => {
 /**
  * phase検証イベント
  *
- * 'sync:request'は対象外
+ * PHASE_CHECK_EXCLUDED_EVENTSに設定したイベントは対象外
  */
 export const phaseValidation =
   (socket: AppSocket) =>
