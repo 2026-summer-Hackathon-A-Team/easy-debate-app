@@ -71,8 +71,6 @@ const syncResultSamples: Record<string, () => SyncResult> = {
     },
     chatHistory,
     judge: {
-      // まだ先の時刻なので待機中として扱われる
-      judgeDisplayStartAt: afterSeconds(judgeDisplayWaitSec),
       judgeConfirmDeadline: afterSeconds(
         judgeDisplayWaitSec + judgeConfirmDeadlineSec,
       ),
@@ -86,8 +84,6 @@ const syncResultSamples: Record<string, () => SyncResult> = {
   judgeWin: () => ({
     phase: 'JUDGE',
     judge: {
-      // 過ぎた時刻なので判定表示済みとして扱われる
-      judgeDisplayStartAt: afterSeconds(-judgeDisplayWaitSec),
       judgeConfirmDeadline: afterSeconds(judgeConfirmDeadlineSec),
       judgeReason,
       users: iWin,
@@ -104,7 +100,6 @@ const syncResultSamples: Record<string, () => SyncResult> = {
   judgeLose: () => ({
     phase: 'JUDGE',
     judge: {
-      judgeDisplayStartAt: afterSeconds(-judgeDisplayWaitSec),
       judgeConfirmDeadline: afterSeconds(judgeConfirmDeadlineSec),
       judgeReason,
       users: iLose,
@@ -121,7 +116,6 @@ const syncResultSamples: Record<string, () => SyncResult> = {
   judgeMoralViolationOfBattle: () => ({
     phase: 'JUDGE',
     judge: {
-      judgeDisplayStartAt: afterSeconds(-judgeDisplayWaitSec),
       judgeConfirmDeadline: afterSeconds(judgeConfirmDeadlineSec),
       judgeReason:
         '誹謗中傷と判定される発言があったため、敗北として処理されました。',
@@ -138,7 +132,6 @@ const syncResultSamples: Record<string, () => SyncResult> = {
   judgeMoralViolationOfThanks: () => ({
     phase: 'JUDGE',
     judge: {
-      judgeDisplayStartAt: afterSeconds(-judgeDisplayWaitSec),
       judgeConfirmDeadline: afterSeconds(judgeConfirmDeadlineSec),
       judgeReason,
       users: iWin,
