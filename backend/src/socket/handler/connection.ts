@@ -38,6 +38,15 @@ export const onConnection = async (
   // 受信イベントごとのphase検証（ハンドシェイクではない場合）
   socket.use(phaseValidation(socket));
 
+  // 現在時刻をクライアントに送信
+  socket.on('time:sync', () => {
+    try {
+      socket.emit('time:result', { serverTime: new Date().toISOString() });
+    } catch (e) {
+      console.error('time:syncの処理に失敗しました。', e);
+    }
+  });
+
   // disconnectハンドラ
   socket.on('disconnect', () => {
     try {
