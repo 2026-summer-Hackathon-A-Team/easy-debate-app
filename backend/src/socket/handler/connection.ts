@@ -10,7 +10,10 @@ import {
 } from './matching.js';
 import { disconnectHandler } from './disconnect.js';
 import { syncRequestHandler } from './syncrequest.js';
-import { debateIsConfirmHandler } from './debatebattle.js';
+import {
+  debateChatSendHandler,
+  debateIsConfirmHandler,
+} from './debatebattle.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -94,6 +97,14 @@ export const onConnection = async (
       await debateIsConfirmHandler(io, socket);
     } catch (e) {
       console.error('debate:isConfirmの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('debate:chatSend', async (data) => {
+    try {
+      await debateChatSendHandler(io, socket, data);
+    } catch (e) {
+      console.error('debate:chatSendの処理に失敗しました。', e);
     }
   });
 };

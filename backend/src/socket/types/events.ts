@@ -23,6 +23,8 @@ export interface ClientToServerEvents {
   'topic:anyChangeRequest': (data: { isHopeChangeTopic: boolean }) => void;
   // ディベートスタートを合図
   'debate:isConfirm': () => void;
+  // チャット送信
+  'debate:chatSend': (data: { chatMsg: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -38,6 +40,8 @@ export interface ServerToClientEvents {
   'topic:anyChangeResult': (data: TopicAnyChangeResult) => void;
   // ディベートスタートの合図
   'debate:start': (data: DebateState) => void;
+  // 両者へチャット返却
+  'debate:chatReceive': (data: DebateState) => void;
 }
 
 export interface InterServerEvents {}
