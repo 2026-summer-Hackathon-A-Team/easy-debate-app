@@ -361,7 +361,7 @@ export const matchIsConfirmHandler = async (
   // 2名揃ったらお題生成中フラグをtrueへ
   room.topicGenerating = true;
 
-  // // 2名揃ったらタイマー停止（matchingRoomsからの削除はお題生成後に実施）
+  // 2名揃ったらタイマー停止（matchingRoomsからの削除はお題生成後に実施）
   stopMatchConfirmTimer(debateId);
   /**
    * お題・ポジション・先行後攻を取得
