@@ -50,5 +50,4 @@ process.on('unhandledRejection', (reason) => {
 });
 process.on('uncaughtException', (e) => {
   console.error('uncaughtException', e);
-  process.exit(1);
 });
