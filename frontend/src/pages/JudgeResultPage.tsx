@@ -15,16 +15,13 @@ import type { ThanksSend } from '../types/socket/thanksSend';
 import type { ThanksReceive } from '../types/socket/thanksReceive';
 import type { RematchRequest } from '../types/socket/rematchRequest';
 import type { RematchResult } from '../types/socket/rematchResult';
-import type { MatchComplete } from '../types/socket/matchComplete';
 
 // お礼メッセージは自分の送信分がこの通数に達すると送れなくなる
 const THANKS_LIMIT = 5;
 
 type RematchStatus = 'idle' | 'waiting' | 'declined';
 
-// このページで実際に使う内部形。violationはJUDGE_WAITING中(判定はまだ確定していない)は
-// 無いため省略可能とし、本物のjudge:resultが届くまで表示を待つためのガードに使う
-type JudgeResultPageState = Omit<JudgeResult, 'violation'> & {
+type JudgeResultPageState = JudgeResult & {
   violation?: JudgeResult['violation'];
   thanksHistory?: ThanksHistoryItem[];
   isThanksDone?: boolean;
@@ -37,39 +34,24 @@ function JudgeResultPage() {
   const navigate = useNavigate();
   const userInfo = useAtomValue(userInfoAtom);
 
-  // DebatePage(judge:result)またはSocketManager(sync:result)からnavigateのstateで
-  // 渡ってくる値。JUDGE_WAITING(判定待ち)中のリロード・直接URLアクセス時はまだ無いため、
-  // judge:resultを直接受け取るまで判定中スピナーを表示する
-  const initialResult = location.state as JudgeResultPageState | null;
+  const state = location.state as JudgeResultPageState;
 
-  const [result, setResult] = useState(initialResult);
-
-  // 判定確認期限までの残り秒数(resultが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
-  const remainingSeconds = useCountdownTimer(
-    result?.judgeConfirmDeadline ?? new Date(0).toISOString(),
-  );
-
-  // judgeDisplayStartAtが未来の時刻なら、それまでは「判定中…」を表示する
-  const [isRevealed, setIsRevealed] = useState(
-    () =>
-      !!result &&
-      (!result.judgeDisplayStartAt ||
-        new Date(result.judgeDisplayStartAt).getTime() <= Date.now()),
-  );
+  // 判定確認期限までの残り秒数
+  const remainingSeconds = useCountdownTimer(state.judgeConfirmDeadline);
 
   const [thanksHistory, setThanksHistory] = useState<ThanksHistoryItem[]>(
-    () => initialResult?.thanksHistory ?? [],
+    state?.thanksHistory ?? [],
   );
   const [thanksInput, setThanksInput] = useState('');
   // isThanksDoneはリロード時に「既にお礼を終えていたか」を復元するための値
   const [isThanksCollapsed, setIsThanksCollapsed] = useState(
-    () => initialResult?.isThanksDone ?? false,
+    state?.isThanksDone ?? false,
   );
   // SocketManager(sync:result)経由でリロードした場合のみ、お礼でのモラル違反
   // (isMoralViolationOfThanks)を検知済みの可能性があるため、自分が違反者なら
   // 警告モーダルを復元する。judge:resultイベント自体にはisMoralViolationOfThanksが
   // 含まれないため(violationはJudgeResultViolation型)、ここだけ別途安全にキャストして読む
-  const initialViolation = initialResult?.violation as
+  const initialViolation = state?.violation as
     | { isMoralViolationOfThanks?: boolean; violationUserId?: number }
     | undefined;
 
@@ -82,36 +64,21 @@ function JudgeResultPage() {
   // isRematchAnswered/isRematchResultはリロード時に「既に再対戦の希望を回答済みか」
   // 「回答済みなら結果はもう分かっているか」を復元するための値
   const [rematchStatus, setRematchStatus] = useState<RematchStatus>(() => {
-    if (initialResult?.isRematchResult === false) {
+    if (state?.isRematchResult === false) {
       return 'declined';
     }
 
-    return initialResult?.isRematchAnswered ? 'waiting' : 'idle';
+    return state?.isRematchAnswered ? 'waiting' : 'idle';
   });
 
   // タイムアウトによる自動遷移と、他の操作による遷移が二重に走らないようにするガード。
   // 既に再対戦を回答済み(=何らかの操作が完了済み)ならリロード後も引き継ぐ
-  const hasActedRef = useRef(initialResult?.isRematchAnswered ?? false);
+  const hasActedRef = useRef(state?.isRematchAnswered ?? false);
+
+  // 判定確認期限が切れたら、再対戦を希望しない扱いでホームへ戻る
+  const isTimeUp = state !== null && remainingSeconds <= 0;
 
   useEffect(() => {
-    if (isRevealed || !result?.judgeDisplayStartAt) {
-      return;
-    }
-
-    const waitMs = Math.max(
-      0,
-      new Date(result.judgeDisplayStartAt).getTime() - Date.now(),
-    );
-    const timer = setTimeout(() => setIsRevealed(true), waitMs);
-
-    return () => clearTimeout(timer);
-  }, [result?.judgeDisplayStartAt, isRevealed]);
-
-  useEffect(() => {
-    function handleJudgeResult(data: JudgeResult) {
-      setResult(data);
-    }
-
     function handleThanksReceive(data: ThanksReceive) {
       setThanksHistory(data.thanksHistory);
     }
@@ -128,26 +95,25 @@ function JudgeResultPage() {
       hasActedRef.current = true;
 
       if (data.isRematchResult) {
-        const payload: MatchComplete = {
-          topic: data.topic,
-          answerDeadline: data.answerDeadline,
-        };
-
-        navigate('/debates/topic-selection', { state: payload });
+        navigate('/debates/topic-selection', { state: data });
         return;
       }
 
       setRematchStatus('declined');
-      setTimeout(() => navigate('/'), 3000);
+      rematchDeclinedTimeoutId = window.setTimeout(() => navigate('/'), 3000);
     }
 
-    socket.on('judge:result', handleJudgeResult);
+    let rematchDeclinedTimeoutId: number | undefined;
+
     socket.on('thanks:receive', handleThanksReceive);
     socket.on('thanks:moralViolation', handleThanksMoralViolation);
     socket.on('rematch:anyResult', handleRematchResult);
 
     return () => {
-      socket.off('judge:result', handleJudgeResult);
+      if (rematchDeclinedTimeoutId !== undefined) {
+        window.clearTimeout(rematchDeclinedTimeoutId);
+      }
+
       socket.off('thanks:receive', handleThanksReceive);
       socket.off('thanks:moralViolation', handleThanksMoralViolation);
       socket.off('rematch:anyResult', handleRematchResult);
@@ -156,9 +122,6 @@ function JudgeResultPage() {
     // 参照が作り直され、このeffectが不要に再実行されてしまうため)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // 判定確認期限が切れたら、再対戦を希望しない扱いでホームへ戻る(resultが届くまでは常にfalse扱い)
-  const isTimeUp = result !== null && remainingSeconds <= 0;
 
   useEffect(() => {
     if (isTimeUp && !hasActedRef.current) {
@@ -214,30 +177,15 @@ function JudgeResultPage() {
     navigate('/');
   }
 
-  // resultがまだ届いていない(JUDGE_WAITING中のリロード等)、judgeDisplayStartAtに
-  // 到達していない、またはviolationが無い(JUDGE_WAITINGはまだ判定確定前でサーバーが
-  // violationを送ってこないため、本物のjudge:resultが届くまでは絶対に公開しない)間は
-  // 判定中スピナーを表示する
-  if (!result || !isRevealed || !result.violation) {
-    return (
-      <div className="max-w-lg mx-auto px-5 py-10 flex flex-col items-center">
-        <div className="h-16 w-16 animate-spin rounded-full border-5 border-[#cfe1d6] border-t-[#4c7e63]" />
-        <Heading level={1} className="mt-5">
-          勝敗判定中…
-        </Heading>
-      </div>
-    );
-  }
-
   const me =
-    result.users.find((user) => user.userId === userInfo?.userId) ??
-    result.users[0];
+    state.users.find((user) => user.userId === userInfo?.userId) ??
+    state.users[0];
 
   // 対戦中の違反・不戦敗の場合はお礼・再対戦の受付を行わない
   const isForfeit =
-    result.violation.isMoralViolationOfBattle ||
-    result.violation.is2NoChat ||
-    result.violation.isLeave;
+    state.violation.isMoralViolationOfBattle ||
+    state.violation.is2NoChat ||
+    state.violation.isLeave;
 
   return (
     <>
@@ -271,21 +219,43 @@ function JudgeResultPage() {
             {me.rateUpDown}（{me.updatedRate}）
           </div>
           <div className="mt-5 rounded-xl bg-[#f7f6f3] py-4.5 px-5 text-left text-sm leading-relaxed text-[#4a504a]">
-            {result.judgeReason}
+            {state.judgeReason}
           </div>
         </div>
 
         {isForfeit ? (
           <div className="mt-4.5 rounded-2xl border border-[#f0c9b3] bg-[#fdf1ec] p-6 text-center">
             <Heading level={2} className="text-[#a6572f]">
-              {result.violation.isMoralViolationOfBattle
-                ? 'モラル違反が検知されました'
-                : result.violation.is2NoChat
-                  ? '2ターン連続で発言がありませんでした'
+              {state.violation.isMoralViolationOfBattle
+                ? `${
+                    state.violation.violationUserId === userInfo?.userId
+                      ? 'あなた'
+                      : '相手'
+                  }のモラル違反が検知されました`
+                : state.violation.is2NoChat
+                  ? `あなたは不戦${
+                      state.violation.violationUserId === userInfo?.userId
+                        ? '敗'
+                        : '勝'
+                    }となりました`
                   : '相手が離脱しました'}
             </Heading>
             <p className="mt-2 text-sm text-[#8a6250] leading-relaxed">
-              今回はお礼・再対戦の受付を行いません。
+              {state.violation.isMoralViolationOfBattle ? (
+                <>
+                  誹謗中傷と判定される発言があったため、
+                  <br />
+                  今回はお礼・再対戦の受付を行いません。
+                </>
+              ) : state.violation.is2NoChat ? (
+                <>
+                  2ターン連続で発言がなかったため、
+                  <br />
+                  今回はお礼・再対戦の受付を行いません。
+                </>
+              ) : (
+                'お礼・再対戦の受付は行いません。'
+              )}
             </p>
             <Button className="mt-5 w-full" onClick={handleGoHome}>
               ホームへ
@@ -306,7 +276,7 @@ function JudgeResultPage() {
               ) : (
                 !isThanksCollapsed && (
                   <div className="flex flex-wrap gap-2">
-                    {result.thanks?.map((preset) => (
+                    {state.thanks?.map((preset) => (
                       <button
                         key={preset.fixedThanksId}
                         onClick={() => sendFixedThanks(preset.fixedThanksId)}
@@ -378,39 +348,42 @@ function JudgeResultPage() {
               )}
             </div>
 
-            <div className="mt-4.5">
-              {result.isRematch ? (
-                <div className="flex gap-2.5">
-                  <Button
-                    className="flex-1 bg-white hover:bg-white text-gray-500 border border-gray-300"
-                    disabled={rematchStatus !== 'idle'}
-                    onClick={() => handleRematchChoice(false)}
-                  >
-                    再戦を希望しない
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    disabled={rematchStatus !== 'idle'}
-                    onClick={() => handleRematchChoice(true)}
-                  >
-                    {rematchStatus === 'waiting'
-                      ? '相手の返答待ち…'
-                      : rematchStatus === 'declined'
-                        ? '再戦は成立しませんでした'
-                        : '再戦を希望する'}
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm text-[#a6572f] font-bold">
-                    ※再対戦の上限回数に達しました
-                  </p>
-                  <Button className="mt-3 w-full" onClick={handleGoHome}>
-                    ホームへ
-                  </Button>
-                </div>
-              )}
-            </div>
+            {/* 「お礼完了の合図をした or お礼数の上限に達した」のいずれかで表示 */}
+            {(isThanksCollapsed || isThanksLimitReached) && (
+              <div className="mt-4.5">
+                {state.isRematch ? (
+                  <div className="flex gap-2.5">
+                    <Button
+                      className="flex-1 bg-white hover:bg-white text-gray-500 border border-gray-300"
+                      disabled={rematchStatus !== 'idle'}
+                      onClick={() => handleRematchChoice(false)}
+                    >
+                      再戦を希望しない
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      disabled={rematchStatus !== 'idle'}
+                      onClick={() => handleRematchChoice(true)}
+                    >
+                      {rematchStatus === 'waiting'
+                        ? '相手の返答待ち…'
+                        : rematchStatus === 'declined'
+                          ? '再戦は成立しませんでした'
+                          : '再戦を希望する'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-sm text-[#a6572f] font-bold">
+                      ※再対戦の上限回数に達しました
+                    </p>
+                    <Button className="mt-3 w-full" onClick={handleGoHome}>
+                      ホームへ
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

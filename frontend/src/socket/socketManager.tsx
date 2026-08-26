@@ -83,27 +83,13 @@ function SocketManager() {
       // ので絶対に補って組み立てない。JudgeResultPage側で「violationが届くまでは
       // カウントダウンが0になっても公開しない」ガードをかけ、本物のjudge:resultを待つ
       if (data.phase === 'JUDGE_WAITING') {
-        if (data.judge) {
-          navigate('/debates/judge', { state: data.judge });
-          return;
-        }
-
-        navigate('/debates/judge');
+        navigate('/debates/chat', { state: data });
         return;
       }
 
       if (data.phase === 'JUDGE') {
-        navigate('/debates/judge', {
-          state: {
-            ...data.judge,
-            violation: data.violation,
-            isRematch: data.isRematch,
-            thanksHistory: data.thanksHistory,
-            isThanksDone: data.isThanksDone,
-            isRematchAnswered: data.isRematchAnswered,
-            isRematchResult: data.isRematchResult,
-          },
-        });
+        navigate('/debates/judge', { state: data });
+        return;
       }
     }
 
