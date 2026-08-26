@@ -154,3 +154,5 @@ export type TopicAnyChangeResult = Pick<
   DebateReady,
   'isChangeTopic' | 'topic' | 'answerDeadline' | 'users'
 >;
+/** debate:startとdebate:chatReceive用レスポンスの型 */
+export type DebateState = Omit<Debate, 'phase'>;
