@@ -13,10 +13,10 @@ const thanksSend: ScenarioHandler = (server) => {
       { userId: opponentUserId, thanksMsg: 'ありがとうございました。' },
     ],
   };
-  server.emit('thanks:receive', payload, 1000);
+  server.emit('thanks:receive', payload, 300);
 
   /** ---------- お礼にモラル違反があった場合 ---------- */
-  // server.emit('thanks:moralViolation', undefined, 1000);
+  // server.emit('thanks:moralViolation', undefined, 300);
 };
 
 export { thanksSend };

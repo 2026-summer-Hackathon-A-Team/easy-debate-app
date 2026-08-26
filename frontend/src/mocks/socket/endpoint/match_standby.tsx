@@ -1,7 +1,7 @@
 import type { ScenarioHandler } from '../../types';
 
 // 相手が見つかるまでの待ち時間（ミリ秒）
-const delayMs = 5000;
+const delayMs = 1000;
 
 /**
  * match:standby  マッチング待機の依頼

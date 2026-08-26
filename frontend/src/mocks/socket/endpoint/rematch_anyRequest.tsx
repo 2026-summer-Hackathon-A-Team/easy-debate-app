@@ -15,10 +15,10 @@ const rematchAnyRequest: ScenarioHandler = (server) => {
     // お題選定画面の回答期限
     answerDeadline: afterSeconds(answerDeadlineSec),
   };
-  server.emit('rematch:anyResult', payload, 1000);
+  server.emit('rematch:anyResult', payload, 300);
 
   /** ---------- どちらかが再対戦を希望しなかった場合 ---------- */
-  // server.emit('rematch:anyResult', { isRematchResult: false }, 1000);
+  // server.emit('rematch:anyResult', { isRematchResult: false }, 300);
 };
 
 export { rematchAnyRequest };

@@ -31,8 +31,11 @@ function TopicConfirmationPage() {
 
   // TopicSelectionPage(topic:anyChangeResult)またはSocketManager(sync:result)から
   // navigateのstateで渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
-  const state = location.state as TopicChangeResult | null;
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない。
+  // isAnsweredはSocketManager(sync:result)経由の場合のみ含まれ、リロード時に
+  // 回答済み状態を復元してdebate:isConfirmの二重送信を防ぐために使う
+  const state = location.state as
+    (TopicChangeResult & { isAnswered?: boolean }) | null;
 
   // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
   const remainingSeconds = useCountdownTimer(
@@ -40,7 +43,7 @@ function TopicConfirmationPage() {
   );
 
   // ディベート開始の準備完了を回答済みか(ボタンを押したら再度押せなくする)
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(() => state?.isAnswered ?? false);
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
@@ -50,15 +53,7 @@ function TopicConfirmationPage() {
   // 両者の合図が揃った場合と、相手が離脱した場合を監視する
   useEffect(() => {
     function handleDebateStart(data: DebateStart) {
-      navigate('/debates/chat', {
-        state: {
-          topic: data.topic,
-          users: data.users,
-          turn: data.turn,
-          chatSubmitDeadline: data.chatSubmitDeadline,
-          chatHistory: data.chatHistory,
-        },
-      });
+      navigate('/debates/chat', { state: data });
     }
 
     function handleOpponentLeave() {
