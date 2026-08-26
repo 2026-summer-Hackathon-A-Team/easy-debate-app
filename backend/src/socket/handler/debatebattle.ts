@@ -17,7 +17,7 @@ const KANA_PATTERN = /[\u3040-\u309F\u30A0-\u30FF]/;
 /** ひらがな・カタカナ・漢字（グローバル） */
 const JAPANESE_PATTERN = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g;
 /** 日本語とみなす最低割合 */
-const JAPANESE_RATIO_THRESHOLD = 0.3;
+const JAPANESE_RATIO_THRESHOLD = 0.5;
 
 /** チャット送信期限（ミリ秒） */
 export const CHAT_SUBMIT_DEADLINE_MS = 120_000;
@@ -26,7 +26,7 @@ export const CHAT_SUBMIT_DEADLINE_MS = 120_000;
  * チャット内容が日本語かどうかを判定する
  *
  * かなを1文字以上含み、かつ日本語文字（かな・漢字）が
- * 全体の30%以上を占める場合は日本語とする
+ * 全体の50%以上を占める場合は日本語とする
  *
  * かなの有無で中国語を、割合で英語主体の文を除外
  */
@@ -144,18 +144,13 @@ export const debateChatSendHandler = async (
   if (debate.isCurrentTurnUserId !== userId) return;
 
   let chatMsg = parsed.data.chatMsg;
-  // 日本語以外の場合はAIで翻訳する（翻訳失敗時はログだけ残しみ翻訳で処理）
+  // 日本語以外の場合はAIで翻訳する（翻訳失敗時はログだけ残して翻訳なしで処理）
   if (!isJapanese(chatMsg)) {
     try {
       chatMsg = await translateToJapanese(chatMsg);
     } catch (e) {
       console.error(`翻訳に失敗しました。: debateId=${debateId}`, e);
     }
-  }
-  // チャット未送信フラグをfalseへ
-  const currentUser = debate.users.find((u) => u.userId === userId);
-  if (currentUser !== undefined) {
-    currentUser.missedLastTurn = false;
   }
 
   // チャット履歴へ追加

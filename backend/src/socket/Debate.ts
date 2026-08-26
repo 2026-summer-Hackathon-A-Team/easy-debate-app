@@ -22,8 +22,6 @@ type DebateUser = {
   isThanksDone?: boolean;
   /** お題チェンジ希望の有無 */
   isHopeChangeTopic?: boolean;
-  /** チャット未送信フラグ（DEBATE時のみ使用） */
-  missedLastTurn?: boolean;
 };
 
 /**ユーザーごとの勝敗判定結果 */
