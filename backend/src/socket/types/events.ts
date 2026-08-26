@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import type {
+  DebateState,
   MatchComplete,
   SyncResult,
   TopicAnyChangeResult,
@@ -20,6 +21,8 @@ export interface ClientToServerEvents {
   'match:isConfirm': () => void;
   // お題チェンジの有無を送信
   'topic:anyChangeRequest': (data: { isHopeChangeTopic: boolean }) => void;
+  // ディベートスタートを合図
+  'debate:isConfirm': () => void;
 }
 
 export interface ServerToClientEvents {
@@ -33,6 +36,8 @@ export interface ServerToClientEvents {
   'match:complete': (data: MatchComplete) => void;
   // お題チェンジの結果を送信
   'topic:anyChangeResult': (data: TopicAnyChangeResult) => void;
+  // ディベートスタートの合図
+  'debate:start': (data: DebateState) => void;
 }
 
 export interface InterServerEvents {}
