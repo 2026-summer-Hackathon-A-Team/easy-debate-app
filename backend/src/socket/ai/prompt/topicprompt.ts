@@ -59,7 +59,7 @@ export const TOPIC_SELECTION_PROMPT = `あなたはディベート用の「お�
 一切不要です。すべての文字列値は日本語で書いてください。
 
 {
-  "topic": "お題",
+  "topic": "お題（旅行に関連するお題に偏りすぎるので旅行がテーマのお題は10%以下にしてください。）",
   "position_a": "A 側の立場",
   "position_b": "B 側の立場",
   "category": "テーマの分類"
