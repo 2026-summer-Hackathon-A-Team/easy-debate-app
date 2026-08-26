@@ -5,7 +5,7 @@ import { debates, userDebateIds } from '../stores/user-debate.js';
 /**
  * phase検証対象外のイベント
  * */
-const PHASE_CHECK_EXCLUDED_EVENTS = new Set(['sync:request']);
+const PHASE_CHECK_EXCLUDED_EVENTS = new Set(['sync:request', 'time:sync']);
 
 /**
  * インスタンスが存在しない状態を表す擬似phase

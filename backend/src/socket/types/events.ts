@@ -10,6 +10,8 @@ export interface SocketData {
 }
 
 export interface ClientToServerEvents {
+  // サーバーの現在時刻を取得
+  'time:sync': () => void;
   // 画面側で同期させる為に必要なデーターの返却を依頼
   'sync:request': () => void;
   // マッチング待機の依頼
@@ -21,6 +23,8 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
+  // サーバーの現在時刻を返却
+  'time:result': (data: { serverTime: string }) => void;
   // 現在の状態を返却
   'sync:result': (data: SyncResult) => void;
   // マッチング相手が見つかった合図
