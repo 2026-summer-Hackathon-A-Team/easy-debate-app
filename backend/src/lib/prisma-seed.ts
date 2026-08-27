@@ -1,4 +1,4 @@
-import { prisma } from '../src/lib/prisma';
+import { prisma } from './prisma.js';
 
 /** モラル違反カテゴリ */
 const categories = [
