@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 
 import Heading from '../components/Heading';
 import Button from '../components/Button';
@@ -12,16 +12,16 @@ import type { SyncResult } from '../types/sync/syncResult';
 const SYNC_TIMEOUT_MS = 5000;
 
 function SocketManager() {
+  const location = useLocation();
   const navigate = useNavigate();
   // 接続失敗・意図しない切断・sync:resultの応答無しを検知した際に表示する
   const [showReconnectModal, setShowReconnectModal] = useState(false);
 
   useEffect(() => {
     let syncTimeoutId: number | undefined;
-
-    function handleBrowserBack() {
-      handleConnect();
-    }
+    // sync:resultでの遷移を履歴に積む(push)か、今の履歴を上書きする(replace)か。
+    // ブラウザバック直後だけは1つ前の画面に居るため、正しい画面を積み直す必要がある
+    let shouldPushOnSync = false;
 
     function clearSyncTimeout() {
       if (syncTimeoutId !== undefined) {
@@ -30,7 +30,10 @@ function SocketManager() {
       }
     }
 
-    function handleConnect() {
+    function requestSync() {
+      // 前回分が残っていると、応答があったのに後から誤検知してしまうため必ず消す
+      clearSyncTimeout();
+
       // 残り秒数の表示ズレ補正用に、まず自端末とサーバーの時計のズレを測っておく
       syncClock();
       socket.emit('sync:request');
@@ -39,6 +42,26 @@ function SocketManager() {
       syncTimeoutId = window.setTimeout(() => {
         setShowReconnectModal(true);
       }, SYNC_TIMEOUT_MS);
+    }
+
+    function handleConnect() {
+      // 接続直後の同期は「今いる画面を正しい画面に直す」だけなので履歴は増やさない
+      shouldPushOnSync = false;
+      requestSync();
+    }
+
+    function handleBrowserBack() {
+      // 1つ前の画面へ移動してしまっているので、正しい画面を履歴へ積み直す
+      shouldPushOnSync = true;
+
+      // 何らかの理由で切断されていた場合は、まず繋ぎ直す
+      // (接続できればconnectイベント経由でsync:requestが飛ぶ)
+      if (!socket.connected) {
+        socket.connect();
+        return;
+      }
+
+      requestSync();
     }
 
     function handleConnectError() {
@@ -56,28 +79,32 @@ function SocketManager() {
       setShowReconnectModal(true);
     }
 
+    function goToPhasePage(path: string, state?: unknown) {
+      navigate(path, { state, replace: !shouldPushOnSync });
+    }
+
     // 遷移先の画面が期待する項目は元々dataのサブセットなので、そのまま渡す
     // (項目を1つずつ書き写すと、sync:resultに項目が増えたときに書き漏らす恐れがあるため)
     function handleSyncResult(data: SyncResult) {
       clearSyncTimeout();
 
       if (data.phase === 'MATCHING') {
-        navigate('/debates/matching');
+        goToPhasePage('/debates/matching');
         return;
       }
 
       if (data.phase === 'TOPIC_CHANGE') {
-        navigate('/debates/topic-selection', { state: data });
+        goToPhasePage('/debates/topic-selection', data);
         return;
       }
 
       if (data.phase === 'DEBATE_READY') {
-        navigate('/debates/topic-confirmation', { state: data });
+        goToPhasePage('/debates/topic-confirmation', data);
         return;
       }
 
       if (data.phase === 'DEBATE') {
-        navigate('/debates/chat', { state: data });
+        goToPhasePage('/debates/chat', data);
         return;
       }
 
@@ -87,12 +114,16 @@ function SocketManager() {
       // ので絶対に補って組み立てない。JudgeResultPage側で「violationが届くまでは
       // カウントダウンが0になっても公開しない」ガードをかけ、本物のjudge:resultを待つ
       if (data.phase === 'JUDGE_WAITING') {
-        navigate('/debates/chat', { state: data });
+        goToPhasePage('/debates/chat', data);
         return;
       }
 
       if (data.phase === 'JUDGE') {
-        navigate('/debates/judge', { state: data });
+        // sync:resultはjudge配下にネストしているが、JudgeResultPageは
+        // judge:result(フラット)の形を前提に読むため、ここで展開して形を揃える
+        const { judge, ...rest } = data;
+
+        goToPhasePage('/debates/judge', { ...rest, ...judge });
         return;
       }
     }
@@ -103,6 +134,12 @@ function SocketManager() {
     socket.on('connect_error', handleConnectError);
     socket.on('disconnect', handleDisconnect);
     socket.on('sync:result', handleSyncResult);
+
+    // /debates/*に入ったらここで接続する。リロード・再接続もこの経路に集約することで、
+    // どの画面から入り直しても必ずsync:requestが飛ぶようにする
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     return () => {
       clearSyncTimeout();
@@ -131,7 +168,9 @@ function SocketManager() {
 
   return (
     <>
-      <Outlet />
+      {/* 同じパスへ再度navigateされた場合(sync:resultでの復元など)も
+          遷移先の画面がstateを取り直せるよう、履歴のキーで作り直す */}
+      <Outlet key={location.key} />
 
       {showReconnectModal && (
         <Modal>

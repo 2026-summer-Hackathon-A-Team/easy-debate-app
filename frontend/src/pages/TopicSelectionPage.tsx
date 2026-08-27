@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useNavigationType } from 'react-router';
 
 import CardLayout from '../Layouts/CardLayout';
 import Heading from '../components/Heading';
@@ -21,6 +21,7 @@ type Outcome =
 function TopicSelectionPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
 
   // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
   // 画面リロード時・直接URLアクセス時はまだstateが無いため、SocketManagerがsync:resultを
@@ -42,8 +43,12 @@ function TopicSelectionPage() {
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
-  // 回答期限が0になったか
-  const isTimeUp = remainingSeconds <= 0;
+  // 回答期限が0になったか。
+  // ブラウザバック・リロード(POP)で表示している間のstateは履歴から復元された当時の値で、
+  // answerDeadlineが既に過ぎている。これを本物の期限切れとして扱うとsocketを切ってしまい、
+  // sync:resultで正しい画面へ戻れなくなるため、POPの間は期限切れとみなさない
+  // (SocketManagerがsync:resultで改めてnavigateすると、この判定は自動的に有効に戻る)
+  const isTimeUp = navigationType !== 'POP' && remainingSeconds <= 0;
 
   // 両者の回答が揃った場合と、相手が離脱した場合を監視する
   useEffect(() => {
