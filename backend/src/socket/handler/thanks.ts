@@ -112,8 +112,6 @@ export const thanksSendHandler = async (
 
     // 違反ユーザーへ通知
     io.in(userRoom(userId)).emit('thanks:moralViolation');
-    // 違反ユーザー切断（disconnectHandlerが呼ばれる）
-    io.in(userRoom(userId)).disconnectSockets(true);
     return;
   }
 
