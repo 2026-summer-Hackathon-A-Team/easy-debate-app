@@ -29,6 +29,11 @@ export interface ClientToServerEvents {
   'debate:chatSend': (data: { chatMsg: string }) => void;
   // 再対戦希望を送信
   'rematch:anyRequest': (data: { isHopeRematch: boolean }) => void;
+  // チャット送信
+  'thanks:send': (data: {
+    fixedThanksId?: number;
+    freeThanksMsg?: string;
+  }) => void;
 }
 
 export interface ServerToClientEvents {
