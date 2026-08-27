@@ -153,7 +153,7 @@ function DebatePage() {
                 {me.position}
               </span>
               {isMyTurn && (
-                <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0">
+                <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0 mx-auto">
                   あなた
                 </span>
               )}
@@ -168,7 +168,7 @@ function DebatePage() {
                 {opponent.position}
               </span>
               {!isMyTurn && (
-                <span className="text-xs font-extrabold text-[#8a5a2e] bg-[#ecd8bf] rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0">
+                <span className="text-xs font-extrabold text-[#8a5a2e] bg-[#ecd8bf] rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0 mx-auto">
                   相手
                 </span>
               )}
