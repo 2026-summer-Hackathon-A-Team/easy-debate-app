@@ -77,7 +77,6 @@ export type JudgeWaiting = {
     chatMsg: string;
   }[];
   judge?: {
-    judgeDisplayStartAt?: string;
     judgeConfirmDeadline: string;
     judgeReason: string;
     users: [
@@ -104,7 +103,6 @@ export type JudgeWaiting = {
 export type Judge = {
   phase: 'JUDGE';
   judge: {
-    judgeDisplayStartAt?: string;
     judgeConfirmDeadline: string;
     judgeReason: string;
     users: [
@@ -154,5 +152,22 @@ export type TopicAnyChangeResult = Pick<
   DebateReady,
   'isChangeTopic' | 'topic' | 'answerDeadline' | 'users'
 >;
+
 /** debate:startとdebate:chatReceive用レスポンスの型 */
 export type DebateState = Omit<Debate, 'phase'>;
+
+/** judge:result用レスポンスの型 */
+export type JudgeResult = Judge['judge'] &
+  Pick<Judge, 'isRematch'> & {
+    violation: Omit<Judge['violation'], 'isMoralViolationOfThanks'>;
+  };
+
+/** thanks:receive用レスポンスの型 */
+export type ThanksReceive = Pick<Judge, 'thanksHistory'>;
+
+/** rematch:anyResult用レスポンスの型 */
+export type RematchAnyResult = {
+  isRematchResult: boolean;
+  topic?: string;
+  answerDeadline?: string;
+};

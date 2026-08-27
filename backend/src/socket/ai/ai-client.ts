@@ -12,7 +12,8 @@ export type RequestTextParams = {
   model: string;
   system: string;
   userMessage: string;
-  temperature: number;
+  /** モデルによっては指定不可のため任意 */
+  temperature?: number;
   maxTokens: number;
 };
 
