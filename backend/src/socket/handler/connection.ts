@@ -15,6 +15,7 @@ import {
   debateIsConfirmHandler,
 } from './debatebattle.js';
 import { rematchAnyRequestHandler } from './rematch.js';
+import { thanksSendHandler } from './thanks.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -116,6 +117,14 @@ export const onConnection = async (
       await rematchAnyRequestHandler(io, socket, data);
     } catch (e) {
       console.error('rematch:anyRequestの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('thanks:send', async (data) => {
+    try {
+      await thanksSendHandler(io, socket, data);
+    } catch (e) {
+      console.error('thanksSendHandlerの処理に失敗しました。', e);
     }
   });
 };
