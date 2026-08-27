@@ -40,7 +40,7 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
   // サーバーの現在時刻を返却
-  'time:result': (data: { serverTime: string }) => void;
+  'time:result': (data: { serverTime: number }) => void;
   // 現在の状態を返却
   'sync:result': (data: SyncResult) => void;
   // マッチング相手が見つかった合図
