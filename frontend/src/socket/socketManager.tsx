@@ -19,6 +19,10 @@ function SocketManager() {
   useEffect(() => {
     let syncTimeoutId: number | undefined;
 
+    function handleBrowserBack() {
+      handleConnect();
+    }
+
     function clearSyncTimeout() {
       if (syncTimeoutId !== undefined) {
         window.clearTimeout(syncTimeoutId);
@@ -93,6 +97,8 @@ function SocketManager() {
       }
     }
 
+    window.addEventListener('popstate', handleBrowserBack);
+
     socket.on('connect', handleConnect);
     socket.on('connect_error', handleConnectError);
     socket.on('disconnect', handleDisconnect);
@@ -100,6 +106,9 @@ function SocketManager() {
 
     return () => {
       clearSyncTimeout();
+
+      window.removeEventListener('popstate', handleBrowserBack);
+
       socket.off('connect', handleConnect);
       socket.off('connect_error', handleConnectError);
       socket.off('disconnect', handleDisconnect);
