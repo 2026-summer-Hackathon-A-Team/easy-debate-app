@@ -144,18 +144,34 @@ function DebatePage() {
           </div>
 
           <div className="bg-white border border-[#e4e2dd] rounded-2xl p-4.5 flex flex-col gap-2.5">
-            <div className="rounded-lg px-2.5 py-2 bg-[#e7f0ea] border border-[#cfe1d6] flex items-center gap-1.5">
-              <span className="text-xs font-bold text-[#2c4d3b]">
+            <div
+              className={`rounded-lg px-2.5 py-2 ${isMyTurn ? 'bg-[#e7f0ea] border border-[#cfe1d6]' : ''}  flex items-center gap-1.5`}
+            >
+              <span
+                className={`text-xs font-bold ${isMyTurn ? 'text-[#2c4d3b]' : ''} `}
+              >
                 {me.position}
               </span>
-              <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5">
-                あなた
-              </span>
+              {isMyTurn && (
+                <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5">
+                  あなた
+                </span>
+              )}
             </div>
-            <div className="px-2.5 py-2">
-              <span className="text-xs font-bold text-[#8a5a2e]">
+
+            <div
+              className={`rounded-lg px-2.5 py-2 ${!isMyTurn ? 'bg-[#f7ede3] border border-[#ecd8bf]' : ''} flex items-center gap-1.5`}
+            >
+              <span
+                className={`text-xs font-bold ${!isMyTurn ? 'text-[#8a5a2e]' : ''}`}
+              >
                 {opponent.position}
               </span>
+              {!isMyTurn && (
+                <span className="text-xs font-extrabold text-[#8a5a2e] bg-[#ecd8bf] rounded-full px-2 py-0.5">
+                  相手
+                </span>
+              )}
             </div>
           </div>
 
