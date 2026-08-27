@@ -145,7 +145,6 @@ export const resolveRematch = async (
     await startRematch(io, debate);
     return;
   }
-  destroyDebateAndDisconnect(io, debate);
   io.to(debateRoom(debate.debateId)).emit('rematch:anyResult', {
     isRematchResult: false,
   });
