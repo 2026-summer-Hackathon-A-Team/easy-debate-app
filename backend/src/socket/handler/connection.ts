@@ -49,7 +49,7 @@ export const onConnection = async (
   // 現在時刻をクライアントに送信
   socket.on('time:sync', () => {
     try {
-      socket.emit('time:result', { serverTime: new Date().toISOString() });
+      socket.emit('time:result', { serverTime: Date.now() });
     } catch (e) {
       console.error('time:syncの処理に失敗しました。', e);
     }
