@@ -13,6 +13,8 @@ export interface SocketData {
 }
 
 export interface ClientToServerEvents {
+  // 切断イベント
+  disconnect: () => void;
   // サーバーの現在時刻を取得
   'time:sync': () => void;
   // 画面側で同期させる為に必要なデーターの返却を依頼
