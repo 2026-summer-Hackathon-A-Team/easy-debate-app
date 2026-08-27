@@ -70,4 +70,4 @@ COPY --from=builder  /backend/prisma.config.ts ./
 EXPOSE 3000
 
 # サーバー起動
-CMD [ "sh", "-c", "npx prisma migrate deploy && npm run start" ]
+CMD [ "sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run start" ]

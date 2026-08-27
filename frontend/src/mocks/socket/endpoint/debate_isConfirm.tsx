@@ -27,7 +27,7 @@ const debateIsConfirm: ScenarioHandler = (server) => {
     chatSubmitDeadline: afterSeconds(chatSubmitDeadlineSec),
     chatHistory: [],
   };
-  server.emit('debate:start', payload, 1000);
+  server.emit('debate:start', payload, 300);
 
   // 相手が離脱するケースを試したいときはコメントを外す
   // server.emit('topic:opponentLeave', undefined, 5000);

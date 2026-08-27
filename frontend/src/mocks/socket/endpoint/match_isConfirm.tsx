@@ -12,7 +12,7 @@ const matchIsConfirm: ScenarioHandler = (server) => {
     // 回答期限は「今から○秒後」で指定
     answerDeadline: afterSeconds(answerDeadlineSec),
   };
-  server.emit('match:complete', payload, 1000);
+  server.emit('match:complete', payload, 300);
 
   // 相手が離脱するケースを試したいときはコメントを外す
   // server.emit('topic:opponentLeave', undefined, 5000);

@@ -8,12 +8,14 @@ import {
   matchIsConfirmHandler,
   topicAnyChangeRequestHandler,
 } from './matching.js';
-import { disconnectHandler } from './disconnect.js';
+import { disconnectHandler, stopDisconnectTimer } from './disconnect.js';
 import { syncRequestHandler } from './syncrequest.js';
 import {
   debateChatSendHandler,
   debateIsConfirmHandler,
 } from './debatebattle.js';
+import { rematchAnyRequestHandler } from './rematch.js';
+import { thanksSendHandler } from './thanks.js';
 
 /**
  * 共通処理 個人ルーム参加処理
@@ -32,11 +34,13 @@ export const onConnection = async (
   // ユーザーの個人ルームに参加
   await socket.join(userRoom(userId));
 
+  // 離脱判定タイマー停止
+  stopDisconnectTimer(userId);
+
   const debateId = userDebateIds.get(userId);
   // 参加中のディベートがあった場合はそのルームに参加
   if (debateId !== undefined) {
     await socket.join(debateRoom(debateId));
-    // TODO: 離脱判定タイマー停止cancelDisconnectTimer(userId); // 未実装
   }
 
   // 受信イベントごとのphase検証（ハンドシェイクではない場合）
@@ -52,9 +56,9 @@ export const onConnection = async (
   });
 
   // disconnectハンドラ
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     try {
-      disconnectHandler(io, userId);
+      await disconnectHandler(io, userId);
     } catch (e) {
       console.error('disconnectの処理に失敗しました。', e);
     }
@@ -68,17 +72,17 @@ export const onConnection = async (
     }
   });
 
-  socket.on('match:standby', () => {
+  socket.on('match:standby', async () => {
     try {
-      matchStandbyHandler(io, socket.data.userId);
+      await matchStandbyHandler(io, userId);
     } catch (e) {
       console.error('match:standbyの処理に失敗しました。', e);
     }
   });
 
-  socket.on('match:isConfirm', () => {
+  socket.on('match:isConfirm', async () => {
     try {
-      matchIsConfirmHandler(io, socket);
+      await matchIsConfirmHandler(io, socket);
     } catch (e) {
       console.error('match:isConfirmの処理に失敗しました。', e);
     }
@@ -105,6 +109,22 @@ export const onConnection = async (
       await debateChatSendHandler(io, socket, data);
     } catch (e) {
       console.error('debate:chatSendの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('rematch:anyRequest', async (data) => {
+    try {
+      await rematchAnyRequestHandler(io, socket, data);
+    } catch (e) {
+      console.error('rematch:anyRequestの処理に失敗しました。', e);
+    }
+  });
+
+  socket.on('thanks:send', async (data) => {
+    try {
+      await thanksSendHandler(io, socket, data);
+    } catch (e) {
+      console.error('thanksSendHandlerの処理に失敗しました。', e);
     }
   });
 };

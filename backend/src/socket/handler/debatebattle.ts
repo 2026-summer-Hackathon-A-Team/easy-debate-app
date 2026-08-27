@@ -6,10 +6,20 @@ import { getDebateAndJoinedUser } from './syncrequest.js';
 import { debateRoom } from '../rooms.js';
 import { z } from 'zod';
 import { translateToJapanese } from '../ai/translate.js';
+import { processJudge } from './debatejudge.js';
+import { stopAnswerDeadlineTimer } from './matching.js';
+
+/**
+ * チャット送信期限タイマー管理用ストア
+ *
+ *- key: debateId
+ * - value: タイムアウト用タイマー
+ */
+const deadlineTimers = new Map<string, NodeJS.Timeout>();
 
 // debate:chatSendのペイロードスキーマ
 const chatSendSchema = z.object({
-  chatMsg: z.string().min(1).max(500),
+  chatMsg: z.string().max(500),
 });
 
 /** ひらがな・カタカナ */
@@ -40,6 +50,25 @@ const isJapanese = (text: string): boolean => {
 
   const japaneseCount = trimmed.match(JAPANESE_PATTERN)?.length ?? 0;
   return japaneseCount / trimmed.length >= JAPANESE_RATIO_THRESHOLD;
+};
+
+/**
+ * 2ターン連続未送信判定処理
+ *
+ * chatHistoryを確認し、対象ユーザーの直近の発言が「発言なし」だったかを見る
+ */
+const isSecondConsecutiveEmpty = (
+  chatHisory: { userId: number; chatMsg: string }[],
+  userId: number,
+): boolean => {
+  // 対象ユーザーの発言だけ新しい順に絞る
+  const userMessages = chatHisory.filter((c) => c.userId === userId);
+  // 直近の発言（今回追加した「発言なし」）と、その前の発言を見る
+  const length = userMessages.length;
+  if (length < 2) return false;
+  const latest = userMessages[length - 1];
+  const previous = userMessages[length - 2];
+  return latest.chatMsg === '' && previous.chatMsg === '';
 };
 
 /**
@@ -90,6 +119,9 @@ export const debateIsConfirmHandler = async (
       winnerFlag: false,
     })),
   });
+
+  // DEBATE_READY用の回答期限タイマーを停止（DEBATEでは不要）
+  stopAnswerDeadlineTimer(debateId);
 
   // DEBATEへ遷移
   debate.phase = 'DEBATE';
@@ -145,7 +177,7 @@ export const debateChatSendHandler = async (
 
   let chatMsg = parsed.data.chatMsg;
   // 日本語以外の場合はAIで翻訳する（翻訳失敗時はログだけ残して翻訳なしで処理）
-  if (!isJapanese(chatMsg)) {
+  if (chatMsg !== '' && !isJapanese(chatMsg)) {
     try {
       chatMsg = await translateToJapanese(chatMsg);
     } catch (e) {
@@ -155,6 +187,14 @@ export const debateChatSendHandler = async (
 
   // チャット履歴へ追加
   debate.chatHistory.push({ userId, chatMsg });
+
+  // 同一ユーザーがから文字を2回送っていれば不戦敗確定へ
+  if (chatMsg === '' && isSecondConsecutiveEmpty(debate.chatHistory, userId)) {
+    debate.violation.is2NoChat = true;
+    debate.violation.violationUserId = userId;
+    await processJudge(io, debate);
+    return;
+  }
 
   // ターンを進める
   debate.currentTurn += 1;
@@ -188,4 +228,11 @@ export const debateChatSendHandler = async (
     chatSubmitDeadline: debate.chatSubmitDeadline.toISOString(),
     chatHistory: debate.chatHistory,
   });
+
+  // 最終ターンなら判定へ
+  if (debate.currentTurn > debate.totalTurn) {
+    debate.phase = 'JUDGE_WAITING';
+    await processJudge(io, debate);
+    return;
+  }
 };

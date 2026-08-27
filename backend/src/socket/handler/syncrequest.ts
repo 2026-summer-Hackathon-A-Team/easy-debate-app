@@ -1,6 +1,6 @@
 import type { AppSocket } from '../types/events.js';
 import { userDebateIds, debates } from '../stores/user-debate.js';
-import { type Debate, resolveJudgePhase } from '../Debate.js';
+import { type Debate } from '../Debate.js';
 
 /**
  * リクエストユーザーのディベート情報取得
@@ -31,10 +31,9 @@ export const getDebateAndJoinedUser = (debateId: string, userId: number) => {
  *
  * 判定中の場合judgeをペイロードに含めない
  * */
-const buildJudge = (debate: Debate) => {
+export const buildJudge = (debate: Debate) => {
   if (debate.judge === undefined) return undefined;
   return {
-    judgeDisplayStartAt: debate.judgeDisplayStartAt?.toISOString(),
     judgeConfirmDeadline: debate.judge.judgeConfirmDeadline.toISOString(),
     judgeReason: debate.judge.judgeReason,
     users: debate.judge.users,
@@ -138,67 +137,67 @@ export const syncRequestHandler = (socket: AppSocket): void => {
       return;
     }
     // 画面にJUDGE_WAITINGとJUDGEどちらを返すか判定
-    case 'JUDGE_WAITING':
-    case 'JUDGE': {
-      const judgePhase = resolveJudgePhase(debate, Date.now());
-      if (judgePhase === 'JUDGE_WAITING') {
-        // 必須項目チェック
-        if (
-          user0.position === undefined ||
-          user1.position === undefined ||
-          debate.isCurrentTurnUserId === undefined
-        ) {
-          throw new Error(
-            `JUDGE_WAITING: required values are missing: debateId=${debate.debateId}`,
-          );
-        }
-        socket.emit('sync:result', {
-          phase: 'JUDGE_WAITING',
-          topic: debate.topic,
-          users: [
-            {
-              userId: user0.userId,
-              position: user0.position,
-            },
-            {
-              userId: user1.userId,
-              position: user1.position,
-            },
-          ],
-          turn: {
-            isCurrentTurnUserId: debate.isCurrentTurnUserId,
-            currentTurn: debate.currentTurn,
-            totalTurn: debate.totalTurn,
-          },
-          chatHistory: debate.chatHistory,
-          judge: buildJudge(debate),
-        });
-        return;
-      }
-      const judge = buildJudge(debate);
-      if (judge === undefined) {
+    case 'JUDGE_WAITING': {
+      // 必須項目チェック
+      if (
+        user0.position === undefined ||
+        user1.position === undefined ||
+        debate.isCurrentTurnUserId === undefined
+      ) {
         throw new Error(
-          `JUDGE: judge result is missing: debateId=${debate.debateId}`,
+          `JUDGE_WAITING: required values are missing: debateId=${debate.debateId}`,
         );
       }
-
       socket.emit('sync:result', {
-        phase: 'JUDGE',
-        judge: judge,
-        thanksHistory: debate.thanksHistory,
-        violation: {
-          isMoralViolationOfBattle: debate.violation.isMoralViolationOfBattle,
-          is2NoChat: debate.violation.is2NoChat,
-          isLeave: debate.violation.isLeave,
-          isMoralViolationOfThanks: debate.violation.isMoralViolationOfThanks,
-          violationUserId: debate.violation.violationUserId,
+        phase: 'JUDGE_WAITING',
+        topic: debate.topic,
+        users: [
+          {
+            userId: user0.userId,
+            position: user0.position,
+          },
+          {
+            userId: user1.userId,
+            position: user1.position,
+          },
+        ],
+        turn: {
+          isCurrentTurnUserId: debate.isCurrentTurnUserId,
+          currentTurn: debate.currentTurn,
+          totalTurn: debate.totalTurn,
         },
-        isThanksDone: user.isThanksDone,
-        isRematch: debate.isRematch,
-        isRematchAnswered: user.isRematchAnswered,
-        isRematchResult: debate.isRematchResult,
+        chatHistory: debate.chatHistory,
+        judge: buildJudge(debate),
       });
       return;
     }
+    case 'JUDGE':
+      {
+        const judge = buildJudge(debate);
+        if (judge === undefined) {
+          throw new Error(
+            `JUDGE: judge result is missing: debateId=${debate.debateId}`,
+          );
+        }
+
+        socket.emit('sync:result', {
+          phase: 'JUDGE',
+          judge: judge,
+          thanksHistory: debate.thanksHistory,
+          violation: {
+            isMoralViolationOfBattle: debate.violation.isMoralViolationOfBattle,
+            is2NoChat: debate.violation.is2NoChat,
+            isLeave: debate.violation.isLeave,
+            isMoralViolationOfThanks: debate.violation.isMoralViolationOfThanks,
+            violationUserId: debate.violation.violationUserId,
+          },
+          isThanksDone: user.isThanksDone,
+          isRematch: debate.isRematch,
+          isRematchAnswered: user.isRematchAnswered,
+          isRematchResult: debate.isRematchResult,
+        });
+      }
+
+      return;
   }
 };

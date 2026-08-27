@@ -22,6 +22,14 @@ type DebateUser = {
   isThanksDone?: boolean;
   /** お題チェンジ希望の有無 */
   isHopeChangeTopic?: boolean;
+  /** お礼送信回数（上限5件） */
+  thanksSendCount?: number;
+  /** お礼ペナルティ済フラグ */
+  isThanksPenalized?: boolean;
+  /** 再対戦を希望するか */
+  isHopeRematch?: boolean;
+  /** 離脱判定フラグ */
+  isLeaveWatching?: boolean;
 };
 
 /**ユーザーごとの勝敗判定結果 */
@@ -64,8 +72,8 @@ export class Debate {
   chatHistory: { userId: number; chatMsg: string }[];
   /** お礼履歴 */
   thanksHistory: { userId: number; thanksMsg: string }[];
-  /** 勝敗表示開始時刻 */
-  judgeDisplayStartAt?: Date;
+  /** このセッション内での再戦回数 */
+  rematchCount: number;
 
   /** 勝敗判定結果 */
   judge?: {
@@ -127,7 +135,7 @@ export class Debate {
     this.topic = topic;
     this.isChangeTopic = false;
     this.answerDeadline = answerDeadline;
-    this.currentTurn = 0;
+    this.currentTurn = 1;
     this.totalTurn = totalTurn;
     this.chatHistory = [];
     this.thanksHistory = [];
@@ -138,24 +146,6 @@ export class Debate {
       isLeave: false,
       isMoralViolationOfThanks: false,
     };
+    this.rematchCount = 0;
   }
 }
-
-/**
- * JUDGE_WAITING / JUDGE判定処理
- *
- * フロントの画面の状態をjudgeDisplayStartAtの経過時間で判定する
- */
-export const resolveJudgePhase = (
-  debate: Debate,
-  now: number,
-): 'JUDGE_WAITING' | 'JUDGE' => {
-  // judgeがまだ無い（AI判定中）
-  if (debate.judge === undefined) return 'JUDGE_WAITING';
-  // judgeDisplayStartAtが無い
-  if (debate.judgeDisplayStartAt === undefined) return 'JUDGE';
-  // 現在時刻 < judgeDisplayStartAt
-  if (now < debate.judgeDisplayStartAt.getTime()) return 'JUDGE_WAITING';
-  // 現在時刻 >= judgeDisplayStartAt
-  return 'JUDGE';
-};

@@ -64,6 +64,13 @@ export const waitingUsers = new Map<number, WaitingUser>();
 const matchConfirmTimers = new Map<string, NodeJS.Timeout>();
 
 /**
+ * 回答期限タイマー管理ストア
+ *
+ * - key: debateId
+ */
+const answerDeadlineTimers = new Map<string, NodeJS.Timeout>();
+
+/**
  * モラルスコアの許容差
  *
  * ディベート相手検索時のモラルスコア差を定義
@@ -102,10 +109,10 @@ const isUserMatchInProgress = (userId: number): boolean => {
   return false;
 };
 /** answerDeadlineの回答期限（ミリ秒） */
-const ANSWER_DEADLINE_MS = 120_000;
+export const ANSWER_DEADLINE_MS = 120_000;
 
 /** ディベートの合計ターン数 */
-const TOTAL_TURN = 10;
+export const TOTAL_TURN = 10;
 
 /**
  * マッチング相手検索
@@ -245,6 +252,48 @@ export const shufflePositions = (
   debate.users[0].turn = isSwapped ? 'SECOND' : 'FIRST';
   debate.users[1].position = isSwapped ? positionA : positionB;
   debate.users[1].turn = isSwapped ? 'FIRST' : 'SECOND';
+};
+
+/**
+ * 回答期限タイムアウト処理
+ *
+ * TOPIC_CHANGE/DEBATE_READYで期限までに揃わなかった場合に実行
+ *
+ * インスタンスを破棄する
+ */
+const answerDeadlineTimeout = (io: AppServer, debateId: string): void => {
+  const debate = debates.get(debateId);
+  if (debate === undefined) return;
+  if (debate.phase !== 'TOPIC_CHANGE' && debate.phase !== 'DEBATE_READY')
+    return;
+
+  io.in(debateRoom(debateId)).disconnectSockets(true);
+  debates.delete(debateId);
+  for (const u of debate.users) {
+    userDebateIds.delete(u.userId);
+  }
+};
+
+/** 回答期限タイマー開始 */
+export const startAnswerDeadlineTimer = (
+  io: AppServer,
+  debateId: string,
+  ms: number,
+): void => {
+  stopAnswerDeadlineTimer(debateId);
+  const timer = setTimeout(() => {
+    answerDeadlineTimers.delete(debateId);
+    answerDeadlineTimeout(io, debateId);
+  }, ms);
+  answerDeadlineTimers.set(debateId, timer);
+};
+
+/** 回答期限タイマー停止 */
+export const stopAnswerDeadlineTimer = (debateId: string): void => {
+  const timer = answerDeadlineTimers.get(debateId);
+  if (timer === undefined) return;
+  clearTimeout(timer);
+  answerDeadlineTimers.delete(debateId);
 };
 
 /**
@@ -395,6 +444,9 @@ export const matchIsConfirmHandler = async (
     true,
   );
 
+  for (const u of debate.users) {
+    u.isLeaveWatching = true;
+  }
   shufflePositions(debate, positionA, positionB);
 
   // インスタンス対応表に登録
@@ -402,7 +454,8 @@ export const matchIsConfirmHandler = async (
   for (const uid of room.userIds) {
     userDebateIds.set(uid, debateId);
   }
-
+  //回答期限タイマースタート
+  startAnswerDeadlineTimer(io, debateId, ANSWER_DEADLINE_MS);
   // 2名へマッチング完了を通知
   io.to(debateRoom(debateId)).emit('match:complete', {
     topic,
@@ -487,6 +540,8 @@ export const topicAnyChangeRequestHandler = async (
     u.isAnswered = false;
     u.isHopeChangeTopic = undefined;
   }
+  // 回答期限タイマースタート
+  startAnswerDeadlineTimer(io, debateId, ANSWER_DEADLINE_MS);
 
   io.to(debateRoom(debateId)).emit('topic:anyChangeResult', {
     isChangeTopic,

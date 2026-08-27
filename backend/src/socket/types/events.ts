@@ -1,8 +1,10 @@
 import { Socket } from 'socket.io';
 import type {
   DebateState,
+  JudgeResult,
   MatchComplete,
   SyncResult,
+  ThanksReceive,
   TopicAnyChangeResult,
 } from './phase.js';
 
@@ -11,6 +13,8 @@ export interface SocketData {
 }
 
 export interface ClientToServerEvents {
+  // 切断イベント
+  disconnect: () => void;
   // サーバーの現在時刻を取得
   'time:sync': () => void;
   // 画面側で同期させる為に必要なデーターの返却を依頼
@@ -25,6 +29,13 @@ export interface ClientToServerEvents {
   'debate:isConfirm': () => void;
   // チャット送信
   'debate:chatSend': (data: { chatMsg: string }) => void;
+  // 再対戦希望を送信
+  'rematch:anyRequest': (data: { isHopeRematch: boolean }) => void;
+  // チャット送信
+  'thanks:send': (data: {
+    fixedThanksId?: number;
+    freeThanksMsg?: string;
+  }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -42,6 +53,20 @@ export interface ServerToClientEvents {
   'debate:start': (data: DebateState) => void;
   // 両者へチャット返却
   'debate:chatReceive': (data: DebateState) => void;
+  // 勝敗結果を返却
+  'judge:result': (data: JudgeResult) => void;
+  // お礼モラル違反を通知
+  'thanks:moralViolation': () => void;
+  // 再対戦の有無を返却
+  'rematch:anyResult': (data: {
+    isRematchResult: boolean;
+    topic?: string;
+    answerDeadline?: string;
+  }) => void;
+  // お礼チャットを返却する
+  'thanks:receive': (data: ThanksReceive) => void;
+  // 相手の離脱を合図
+  'topic:opponentLeave': () => void;
 }
 
 export interface InterServerEvents {}
