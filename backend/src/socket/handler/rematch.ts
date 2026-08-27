@@ -145,6 +145,11 @@ export const resolveRematch = async (
     await startRematch(io, debate);
     return;
   }
+  stopJudgeConfirmTimer(debate.debateId);
+  debates.delete(debate.debateId);
+  for (const u of debate.users) {
+    userDebateIds.delete(u.userId);
+  }
   io.to(debateRoom(debate.debateId)).emit('rematch:anyResult', {
     isRematchResult: false,
   });
