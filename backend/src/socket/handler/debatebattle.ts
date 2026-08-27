@@ -1,11 +1,21 @@
 import type { AppServer } from '../index.js';
 import { prisma } from '../../lib/prisma.js';
-import { userDebateIds } from '../stores/user-debate.js';
+import { debates, userDebateIds } from '../stores/user-debate.js';
 import type { AppSocket } from '../types/events.js';
 import { getDebateAndJoinedUser } from './syncrequest.js';
 import { debateRoom } from '../rooms.js';
 import { z } from 'zod';
 import { translateToJapanese } from '../ai/translate.js';
+import { processJudge } from './debatejudge.js';
+import { stopAnswerDeadlineTimer } from './matching.js';
+
+/**
+ * チャット送信期限タイマー管理用ストア
+ *
+ *- key: debateId
+ * - value: タイムアウト用タイマー
+ */
+const deadlineTimers = new Map<string, NodeJS.Timeout>();
 
 // debate:chatSendのペイロードスキーマ
 const chatSendSchema = z.object({
@@ -21,6 +31,9 @@ const JAPANESE_RATIO_THRESHOLD = 0.5;
 
 /** チャット送信期限（ミリ秒） */
 export const CHAT_SUBMIT_DEADLINE_MS = 120_000;
+
+/** 「発言なし」の記録用メッセージ */
+const NO_CHAT_MESSAGE = '（発言なし・タイムアウト）';
 
 /**
  * チャット内容が日本語かどうかを判定する
@@ -40,6 +53,135 @@ const isJapanese = (text: string): boolean => {
 
   const japaneseCount = trimmed.match(JAPANESE_PATTERN)?.length ?? 0;
   return japaneseCount / trimmed.length >= JAPANESE_RATIO_THRESHOLD;
+};
+
+/**
+ * チャット送信期限タイマー
+ * */
+export const startChatSubmitDeadlineTimer = (
+  debateId: string,
+  callback: () => void,
+  ms: number,
+): void => {
+  stopDeadlineTimer(debateId);
+  const timer = setTimeout(() => {
+    deadlineTimers.delete(debateId);
+    callback();
+  }, ms);
+  deadlineTimers.set(debateId, timer);
+};
+
+/** 送信期限タイマー停止 */
+export const stopDeadlineTimer = (debateId: string): void => {
+  const timer = deadlineTimers.get(debateId);
+  if (timer === undefined) return;
+  clearTimeout(timer);
+  deadlineTimers.delete(debateId);
+};
+
+/**
+ * 2ターン連続未送信判定処理
+ *
+ * chatHistoryを確認し、対象ユーザーの直近の発言が「発言なし」だったかを見る
+ */
+const isSecondConsecutiveTimeout = (
+  chatHisory: { userId: number; chatMsg: string }[],
+  userId: number,
+): boolean => {
+  // 対象ユーザーの発言だけ新しい順に絞る
+  const userMessage = chatHisory.filter((c) => c.userId === userId).reverse();
+  // 直近の発言（今回追加した「発言なし」）と、その前の発言を見る
+  const [latest, previous] = userMessage;
+  return (
+    latest?.chatMsg === NO_CHAT_MESSAGE && previous?.chatMsg === NO_CHAT_MESSAGE
+  );
+};
+
+/**
+ * チャット送信期限切れ処理
+ *
+ * 現在のターンのユーザーが未送信の場合実行
+ *
+ * 「発言なし」として記録し、2連続なら判定へ進む
+ */
+export const chatDeadlineTimeout = async (
+  io: AppServer,
+  debateId: string,
+): Promise<void> => {
+  const debate = debates.get(debateId);
+  if (debate === undefined) return;
+  if (debate.phase !== 'DEBATE') return;
+
+  // このターンのユーザーIDを取得
+  const currentUserId = debate.isCurrentTurnUserId;
+  const currentUser = debate.users.find((u) => u.userId === currentUserId);
+  if (currentUser === undefined) {
+    throw new Error(`current user not found: debateId=${debateId}`);
+  }
+
+  // 「発言なし」として記録
+  debate.chatHistory.push({
+    userId: currentUser.userId,
+    chatMsg: NO_CHAT_MESSAGE,
+  });
+
+  // 同一ユーザーが2連続未送信なら判定へ
+  if (isSecondConsecutiveTimeout(debate.chatHistory, currentUser.userId)) {
+    debate.violation.is2NoChat = true;
+    debate.violation.violationUserId = currentUser.userId;
+    await processJudge(io, debate);
+    return;
+  }
+
+  // ターンを進める
+  debate.currentTurn += 1;
+  const nextUser = debate.users.find((u) => u.userId !== currentUserId);
+  debate.isCurrentTurnUserId = nextUser?.userId;
+  debate.chatSubmitDeadline = new Date(Date.now() + CHAT_SUBMIT_DEADLINE_MS);
+
+  const [user0, user1] = debate.users;
+  if (
+    user0.position === undefined ||
+    user1.position === undefined ||
+    debate.isCurrentTurnUserId === undefined
+  ) {
+    throw new Error(
+      `DEBATE: required values are missing: debateId=${debateId}`,
+    );
+  }
+
+  io.to(debateRoom(debateId)).emit('debate:chatReceive', {
+    topic: debate.topic,
+    users: [
+      { userId: user0.userId, position: user0.position },
+      { userId: user1.userId, position: user1.position },
+    ],
+    turn: {
+      isCurrentTurnUserId: debate.isCurrentTurnUserId,
+      currentTurn: debate.currentTurn,
+      totalTurn: debate.totalTurn,
+    },
+    chatSubmitDeadline: debate.chatSubmitDeadline.toISOString(),
+    chatHistory: debate.chatHistory,
+  });
+
+  // 全ターン終了で勝敗判定へ
+  if (debate.currentTurn > debate.totalTurn) {
+    debate.phase = 'JUDGE_WAITING';
+    await processJudge(io, debate);
+    return;
+  }
+
+  // タイマーを再設定
+  startChatSubmitDeadlineTimer(
+    debateId,
+    () => {
+      chatDeadlineTimeout(io, debateId).catch((e: unknown) => {
+        console.error('chatDeadlineTimeoutの処理に失敗しました。', e);
+      });
+    },
+    CHAT_SUBMIT_DEADLINE_MS,
+  );
 };
 
 /**
@@ -90,6 +232,9 @@ export const debateIsConfirmHandler = async (
       winnerFlag: false,
     })),
   });
+
+  // DEBATE_READY用の回答期限タイマーを停止（DEBATEでは不要）
+  stopAnswerDeadlineTimer(debateId);
 
   // DEBATEへ遷移
   debate.phase = 'DEBATE';
@@ -188,4 +333,22 @@ export const debateChatSendHandler = async (
     chatSubmitDeadline: debate.chatSubmitDeadline.toISOString(),
     chatHistory: debate.chatHistory,
   });
+
+  // 最終ターンなら判定へ
+  if (debate.currentTurn > debate.totalTurn) {
+    debate.phase = 'JUDGE_WAITING';
+    await processJudge(io, debate);
+    return;
+  }
+
+  // 次のターンのタイマーを開始
+  startChatSubmitDeadlineTimer(
+    debateId,
+    () => {
+      chatDeadlineTimeout(io, debateId).catch((e: unknown) => {
+        console.error('chatDeadlineTimeoutの処理に失敗しました。', e);
+      });
+    },
+    CHAT_SUBMIT_DEADLINE_MS,
+  );
 };
