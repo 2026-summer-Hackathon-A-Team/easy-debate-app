@@ -29,6 +29,9 @@ const JAPANESE_PATTERN = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g;
 /** 日本語とみなす最低割合 */
 const JAPANESE_RATIO_THRESHOLD = 0.5;
 
+/** 「発言なし」の記録用メッセージ */
+const NO_CHAT_MESSAGE = '（発言なし・タイムアウト）';
+
 /** チャット送信期限（ミリ秒） */
 export const CHAT_SUBMIT_DEADLINE_MS = 120_000;
 
@@ -51,6 +54,19 @@ const isJapanese = (text: string): boolean => {
   const japaneseCount = trimmed.match(JAPANESE_PATTERN)?.length ?? 0;
   return japaneseCount / trimmed.length >= JAPANESE_RATIO_THRESHOLD;
 };
+
+/**
+ * チャット履歴を表示ように変換する
+ *
+ * から文字（タイムアウトによる未入力を表示用の文言に置き換える）
+ */
+const toDisplayChatHistory = (
+  chatHisory: { userId: number; chatMsg: string }[],
+): { userId: number; chatMsg: string }[] =>
+  chatHisory.map((c) => ({
+    userId: c.userId,
+    chatMsg: c.chatMsg === '' ? NO_CHAT_MESSAGE : c.chatMsg,
+  }));
 
 /**
  * 2ターン連続未送信判定処理
@@ -226,7 +242,7 @@ export const debateChatSendHandler = async (
       totalTurn: debate.totalTurn,
     },
     chatSubmitDeadline: debate.chatSubmitDeadline.toISOString(),
-    chatHistory: debate.chatHistory,
+    chatHistory: toDisplayChatHistory(debate.chatHistory),
   });
 
   // 最終ターンなら判定へ
