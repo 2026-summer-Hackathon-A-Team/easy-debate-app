@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useAtom } from 'jotai';
+import { useAtomValue, useStore } from 'jotai';
 
 import Heading from '../components/Heading';
 import Button from '../components/Button';
@@ -32,7 +32,8 @@ type JudgeResultPageState = JudgeResult & {
 function JudgeResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [userInfo, setUserInfo] = useAtom(userInfoAtom);
+  const userInfo = useAtomValue(userInfoAtom);
+  const store = useStore();
 
   // DebatePage(judge:result)またはSocketManager(sync:result)からnavigateのstateで
   // 渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
@@ -139,21 +140,25 @@ function JudgeResultPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
 
-    useEffect(() => {
-    if (!state || !userInfo) {
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+    const currentUserInfo = store.get(userInfoAtom);
+    if (!currentUserInfo) {
       return;
     }
 
     const me =
-      state.users.find((user) => user.userId === userInfo.userId) ??
+      state.users.find((user) => user.userId === currentUserInfo.userId) ??
       state.users[0];
 
-    if (userInfo.rate === me.updatedRate) {
+    if (currentUserInfo.rate === me.updatedRate) {
       return;
     }
 
-    setUserInfo({ ...userInfo, rate: me.updatedRate });
-  }, [state, userInfo, setUserInfo]);
+    store.set(userInfoAtom, { ...currentUserInfo, rate: me.updatedRate });
+  }, [state, store]);
 
   const myThanksCount = thanksHistory.filter(
     (thanks) => thanks.userId === userInfo?.userId,
