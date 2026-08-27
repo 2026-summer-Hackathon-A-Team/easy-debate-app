@@ -1,15 +1,29 @@
 import Heading from '../components/Heading';
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useNavigationType } from 'react-router';
 
 import { socket } from '../socket/socket';
 import type { MatchComplete } from '../types/socket/matchComplete';
+import type { SyncResult } from '../types/sync/syncResult';
 
 function MatchingPage() {
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
 
   useEffect(() => {
+    // match:standbyは1マウントにつき1回だけ送る
+    let isStandbyRequested = false;
+
+    function requestStandby() {
+      if (isStandbyRequested) {
+        return;
+      }
+
+      isStandbyRequested = true;
+      socket.emit('match:standby');
+    }
+
     function handleMatchFound() {
       socket.emit('match:isConfirm');
     }
@@ -20,20 +34,32 @@ function MatchingPage() {
       navigate('/debates/topic-selection', { state: data });
     }
 
-    // Socket接続
-    socket.connect();
+    // ブラウザバック・リロードでこの画面に来た場合は、まだディベート中の可能性がある。
+    // その状態のmatch:standbyはサーバー側でphase不一致として弾かれるため、
+    // sync:resultでMATCHING(=どのディベートにも参加していない)と分かってから依頼する
+    function handleSyncResult(data: SyncResult) {
+      if (data.phase === 'MATCHING') {
+        requestStandby();
+      }
+    }
 
     socket.on('match:isFound', handleMatchFound);
     socket.on('match:complete', handleMatchComplete);
+    socket.on('sync:result', handleSyncResult);
 
-    // 受け口を用意してからマッチング待ちをリクエストする
-    socket.emit('match:standby');
+    // 自分の操作でこの画面へ来た場合(POP以外)は、ディベート中でないことが分かっているので
+    // sync:resultを待たずに依頼する。Socketの接続はSocketManagerが行うため、
+    // 未接続の間は送信バッファに積まれ、接続完了後にまとめて送られる
+    if (navigationType !== 'POP') {
+      requestStandby();
+    }
 
     return () => {
       socket.off('match:isFound', handleMatchFound);
       socket.off('match:complete', handleMatchComplete);
+      socket.off('sync:result', handleSyncResult);
     };
-  }, [navigate]);
+  }, [navigate, navigationType]);
 
   return (
     <>

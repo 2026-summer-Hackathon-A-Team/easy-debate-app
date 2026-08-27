@@ -74,9 +74,11 @@ function DebatePage() {
   }, []);
 
   // 発言期限が切れたら、入力中の内容(空でも)をそのまま自動送信する。
-  // 送信結果のstate更新はdebate:chatReceive側で行うため、ここではsocket.emitのみ行う
+  // 送信結果のstate更新はdebate:chatReceive側で行うため、ここではsocket.emitのみ行う。
+  // 全ターン終了後(JUDGE_WAITING)は発言期限自体が存在せず、debateにchatSubmitDeadlineが
+  // 含まれないため常に期限切れ扱いになる。この状態で送るとサーバー側で弾かれるので除外する
   useEffect(() => {
-    if (isMyTurn && !isSending && isTimeUp) {
+    if (isMyTurn && !isSending && isTimeUp && !isDebateFinished) {
       const payload: DebateChatSend = { chatMsg: chatInput.trim() };
 
       socket.emit('debate:chatSend', payload);
