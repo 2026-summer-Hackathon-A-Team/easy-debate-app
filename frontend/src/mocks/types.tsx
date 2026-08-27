@@ -50,7 +50,6 @@ type JudgeUserResult = {
 
 // 勝敗判定結果(JUDGE_WAITING / JUDGE)
 type Judge = {
-  judgeDisplayStartAt?: string;
   judgeConfirmDeadline: string;
   judgeReason: string;
   users: [JudgeUserResult, JudgeUserResult];

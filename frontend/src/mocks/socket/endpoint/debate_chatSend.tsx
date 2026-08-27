@@ -40,8 +40,7 @@ const debateChatSend: ScenarioHandler = (server) => {
 
   // const now = Date.now();
   // const judgeResult = {
-  //   judgeDisplayStartAt: new Date(now + 15 * 1000).toISOString(),
-  //   judgeConfirmDeadline: new Date(now + 135 * 1000).toISOString(),
+  //   judgeConfirmDeadline: new Date(now + 120 * 1000).toISOString(),
   //   judgeReason: '具体的な根拠を提示し、相手の主張に的確に反論できていたため。',
   //   users: [
   //     {
@@ -80,7 +79,7 @@ const debateChatSend: ScenarioHandler = (server) => {
   //   ],
   // };
 
-  // server.emit('judge:result', judgeResult, 200);
+  // server.emit('judge:result', judgeResult, 6000);
 };
 
 export { debateChatSend };

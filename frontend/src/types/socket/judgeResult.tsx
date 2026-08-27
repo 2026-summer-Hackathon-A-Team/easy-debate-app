@@ -11,8 +11,6 @@ type JudgeResultViolation = {
 
 // judge:result イベントのペイロード（勝敗判定結果をサーバーから受け取る）
 type JudgeResult = {
-  // 15秒待機がある場合のみ含まれる(2連続無回答/離脱による不戦敗では即座に遷移するため含まれない)
-  judgeDisplayStartAt?: string;
   judgeConfirmDeadline: string;
   judgeReason: string;
   users: [JudgeUserResult, JudgeUserResult];

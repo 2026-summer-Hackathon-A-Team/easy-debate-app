@@ -20,12 +20,7 @@ function DebatePage() {
 
   const userInfo = useAtomValue(userInfoAtom);
 
-  // TopicConfirmationPage(debate:start)またはSocketManager(sync:result)からnavigateの
-  // stateで渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
-  const initialDebate = location.state as DebateState | null;
-
-  const [debate, setDebate] = useState(initialDebate);
+  const [debate, setDebate] = useState(location.state as DebateState);
   // 発言期限までの残り秒数(debateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
   const remainingSeconds = useCountdownTimer(
     debate?.chatSubmitDeadline ?? new Date(0).toISOString(),
@@ -34,12 +29,9 @@ function DebatePage() {
   // 送信済みで相手からの応答待ちか
   const [isSending, setIsSending] = useState(false);
 
-  // judgeDisplayStartAtを含むjudge:resultを受け取った後、遷移待ちの間だけ入る値
-  const [pendingJudgeResult, setPendingJudgeResult] =
-    useState<JudgeResult | null>(null);
-  // judgeDisplayStartAtまでの残り秒数(pendingJudgeResultが無い間は既に期限切れの日時を渡す)
-  const judgeWaitRemainingSeconds = useCountdownTimer(
-    pendingJudgeResult?.judgeDisplayStartAt ?? new Date(0).toISOString(),
+  // ターン全て終了しているか
+  const [isDebateFinished, setIsDebateFinished] = useState(
+    debate !== null && debate?.turn.totalTurn + 1 <= debate?.turn.currentTurn,
   );
 
   const isMyTurn = debate?.turn.isCurrentTurnUserId === userInfo?.userId;
@@ -51,26 +43,28 @@ function DebatePage() {
   useEffect(() => {
     function handleChatReceive(data: DebateChatReceive) {
       setDebate(data);
+      setIsDebateFinished(
+        data !== null && data.turn.totalTurn + 1 <= data.turn.currentTurn,
+      );
       setChatInput('');
       setIsSending(false);
     }
 
-    function handleJudgeResult(data: JudgeResult) {
-      // judgeDisplayStartAtが無い場合(2連続無回答・離脱による不戦敗)は即座に遷移する。
-      // ある場合は、相手の最後のチャットを確認する時間として待機してから遷移する
-      // (実際の待機とnavigateはjudgeWaitRemainingSecondsを見ているuseEffectで行う)
-      if (data.judgeDisplayStartAt === undefined) {
-        navigate('/debates/judge', { state: data });
-        return;
-      }
+    // 判定結果がjudge:resultで返却されたら、3秒後にJudgeResultPageに遷移する
+    // （ユーザーに最後のチャットを読んでもらう猶予を与えるため）
+    let timer: number;
 
-      setPendingJudgeResult(data);
+    function handleJudgeResult(data: JudgeResult) {
+      timer = window.setTimeout(() => {
+        navigate('/debates/judge', { state: data });
+      }, 3000);
     }
 
     socket.on('debate:chatReceive', handleChatReceive);
     socket.on('judge:result', handleJudgeResult);
 
     return () => {
+      clearTimeout(timer);
       socket.off('debate:chatReceive', handleChatReceive);
       socket.off('judge:result', handleJudgeResult);
     };
@@ -93,13 +87,6 @@ function DebatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
 
-  // judgeDisplayStartAtまでの待機が終わったら、勝敗判定情報を渡しながら遷移する
-  useEffect(() => {
-    if (pendingJudgeResult && judgeWaitRemainingSeconds <= 0) {
-      navigate('/debates/judge', { state: pendingJudgeResult });
-    }
-  }, [pendingJudgeResult, judgeWaitRemainingSeconds, navigate]);
-
   function handleSend() {
     const trimmed = chatInput.trim();
 
@@ -114,7 +101,7 @@ function DebatePage() {
   }
   // isTimeUp中・判定結果待機中は次に進めないようにする(タイムアウト自動送信の二重送信防止)
   const isInputDisabled =
-    !isMyTurn || isSending || isTimeUp || pendingJudgeResult !== null;
+    !isMyTurn || isSending || isTimeUp || isDebateFinished;
 
   // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
   if (!debate) {
@@ -171,7 +158,7 @@ function DebatePage() {
           </div>
 
           <div className="bg-white border border-[#e4e2dd] rounded-2xl p-5 text-center">
-            {pendingJudgeResult ? (
+            {isDebateFinished ? (
               <>
                 <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-[#cfe1d6] border-t-[#4c7e63]" />
                 <div className="mt-3 text-xs font-bold text-[#8a8f89]">
@@ -235,7 +222,7 @@ function DebatePage() {
               disabled={isInputDisabled}
               maxLength={500}
               placeholder={
-                pendingJudgeResult
+                isDebateFinished
                   ? '判定結果を待っています…'
                   : isMyTurn
                     ? '主張を入力（Enterで送信）'
