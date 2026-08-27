@@ -34,10 +34,15 @@ function JudgeResultPage() {
   const navigate = useNavigate();
   const userInfo = useAtomValue(userInfoAtom);
 
-  const state = location.state as JudgeResultPageState;
+  // DebatePage(judge:result)またはSocketManager(sync:result)からnavigateのstateで
+  // 渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  const state = location.state as JudgeResultPageState | null;
 
-  // 判定確認期限までの残り秒数
-  const remainingSeconds = useCountdownTimer(state.judgeConfirmDeadline);
+  // 判定確認期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  const remainingSeconds = useCountdownTimer(
+    state?.judgeConfirmDeadline ?? new Date(0).toISOString(),
+  );
 
   const [thanksHistory, setThanksHistory] = useState<ThanksHistoryItem[]>(
     state?.thanksHistory ?? [],
@@ -175,6 +180,11 @@ function JudgeResultPage() {
   function handleGoHome() {
     hasActedRef.current = true;
     navigate('/');
+  }
+
+  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  if (!state) {
+    return null;
   }
 
   const me =
