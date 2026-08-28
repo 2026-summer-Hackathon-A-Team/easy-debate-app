@@ -255,43 +255,45 @@ function JudgeResultPage() {
         </div>
 
         {isForfeit ? (
-          <div className="mt-4.5 rounded-2xl border border-[#f0c9b3] bg-[#fdf1ec] p-6 text-center">
-            <Heading level={2} className="text-[#a6572f]">
-              {state.violation.isMoralViolationOfBattle
-                ? `${
-                    state.violation.violationUserId === userInfo?.userId
-                      ? 'あなた'
-                      : '相手'
-                  }のモラル違反が検知されました`
-                : state.violation.is2NoChat
-                  ? `あなたは不戦${
+          <>
+            <div className="mt-4.5 rounded-2xl border border-[#d5bb9c] bg-[#f7ede3] p-6 text-center">
+              <Heading level={2} className="text-[#8a5a2e]">
+                {state.violation.isMoralViolationOfBattle
+                  ? `${
                       state.violation.violationUserId === userInfo?.userId
-                        ? '敗'
-                        : '勝'
-                    }となりました`
-                  : '相手が離脱しました'}
-            </Heading>
-            <p className="mt-2 text-sm text-[#8a6250] leading-relaxed">
-              {state.violation.isMoralViolationOfBattle ? (
-                <>
-                  誹謗中傷と判定される発言があったため、
-                  <br />
-                  今回はお礼・再対戦の受付を行いません。
-                </>
-              ) : state.violation.is2NoChat ? (
-                <>
-                  2ターン連続で発言がなかったため、
-                  <br />
-                  今回はお礼・再対戦の受付を行いません。
-                </>
-              ) : (
-                'お礼・再対戦の受付は行いません。'
-              )}
-            </p>
+                        ? 'あなた'
+                        : '相手'
+                    }のモラル違反が検知されました`
+                  : state.violation.is2NoChat
+                    ? `あなたは不戦${
+                        state.violation.violationUserId === userInfo?.userId
+                          ? '敗'
+                          : '勝'
+                      }となりました`
+                    : '相手が離脱しました'}
+              </Heading>
+              <p className="mt-2 text-sm text-[#8a5a2e] leading-relaxed">
+                {state.violation.isMoralViolationOfBattle ? (
+                  <>
+                    誹謗中傷と判定される発言があったため、
+                    <br />
+                    今回はお礼・再対戦の受付を行いません。
+                  </>
+                ) : state.violation.is2NoChat ? (
+                  <>
+                    2ターン連続で発言がなかったため、
+                    <br />
+                    今回はお礼・再対戦の受付を行いません。
+                  </>
+                ) : (
+                  'お礼・再対戦の受付は行いません。'
+                )}
+              </p>
+            </div>
             <Button className="mt-5 w-full" onClick={handleGoHome}>
               ホームへ
             </Button>
-          </div>
+          </>
         ) : (
           <>
             <div className="mt-4.5 rounded-2xl border border-[#e4e2dd] bg-white p-6 px-6.5">
