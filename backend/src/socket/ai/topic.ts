@@ -2,6 +2,17 @@
 // 今回はあらかじめ用意したお題での運用に切り替えた。
 // 以下記述コードは今回未使用
 
+// 現在はtopicpool.tsのお題リストからランダムで選択する処理を使用しています。
+// AI処理に切り替える場合、各ハンドラーのお題生成処理を以下の記述に書き換える
+// const { topic, positionA, positionB } = await requestTopic().catch((e) => {
+// console.error('topic generation failed', e);
+// return {
+// topic: 'PCのOSはWindowsかMacどちらが優れている?',
+// positionA: 'Windowsが優れている',
+// positionB: 'Macが優れている',
+// };
+// });
+
 import { z } from 'zod';
 import { requestText } from './ai-client.js';
 import { TOPIC_SELECTION_PROMPT } from './prompt/topicprompt.js';

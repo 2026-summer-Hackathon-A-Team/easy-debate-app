@@ -6,14 +6,14 @@ export type TopicCandidate = {
 };
 
 /**
- * お題プールから、除外リストに含まれていないお題をランダムに1つ選ぶ
+ * お題候補からランダムに1件選び、候補から取り除く
  *
- * @param excludeTopic 除外するお題（なしなら引数渡さない）
+ * @param topicList 残っているお題候補（この配列自体が変更される）
  */
-export const pickTopic = (excludeTopics: string[] = []): TopicCandidate => {
-  const available = TOPICPOOL.filter((t) => !excludeTopics.includes(t.topic));
-  const index = Math.floor(Math.random() * available.length);
-  return available[index];
+export const pickTopic = (topicList: TopicCandidate[]): TopicCandidate => {
+  const index = Math.floor(Math.random() * topicList.length);
+  const [picked] = topicList.splice(index, 1);
+  return picked;
 };
 
 export const TOPICPOOL: TopicCandidate[] = [

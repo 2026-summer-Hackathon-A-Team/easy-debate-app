@@ -1,3 +1,4 @@
+import { type TopicCandidate } from './topicpool.js';
 import type { SyncResult } from './types/phase.js';
 
 /**
@@ -74,8 +75,8 @@ export class Debate {
   thanksHistory: { userId: number; thanksMsg: string }[];
   /** このセッション内での再戦回数 */
   rematchCount: number;
-  // 選択済みのお題
-  usedTopics: string[];
+  /** お題リスト */
+  topicList: TopicCandidate[];
 
   /** 勝敗判定結果 */
   judge?: {
@@ -117,6 +118,7 @@ export class Debate {
     answerDeadline: Date,
     totalTurn: number,
     isRematch: boolean,
+    topicList: TopicCandidate[],
   ) {
     this.debateId = debateId;
     this.users = [
@@ -135,6 +137,7 @@ export class Debate {
     ];
     this.phase = 'TOPIC_CHANGE';
     this.topic = topic;
+    this.topicList = topicList;
     this.isChangeTopic = false;
     this.answerDeadline = answerDeadline;
     this.currentTurn = 1;
@@ -149,6 +152,5 @@ export class Debate {
       isMoralViolationOfThanks: false,
     };
     this.rematchCount = 0;
-    this.usedTopics = [topic];
   }
 }

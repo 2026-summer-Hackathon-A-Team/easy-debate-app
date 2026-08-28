@@ -67,27 +67,7 @@ const startRematch = async (io: AppServer, debate: Debate): Promise<void> => {
 
   const rematchCount = debate.rematchCount + 1;
 
-  const { topic, positionA, positionB } = pickTopic(debate.usedTopics);
-
-  /**
-   * AIによるお題選定の精度が安定しない為、今回未使用
-   *
-   * AIお題生成に切り替える場合、
-   * 「const { topic, positionA, positionB } = pickTopic(debate.usedTopics);」
-   * をコメントアウトし、下記処理のコメントアウトを解除する
-   * 
-   * お題・ポジション・先行後攻を取得
-   *
-   * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
-   *
-  const { topic, positionA, positionB } = await requestTopic().catch((e) => {
-    console.error('topic generation failed', e);
-    return {
-      topic: '一生無料になるなら外食と交通費どちらを選ぶべきか?',
-      positionA: '外食を無料にするべき',
-      positionB: '交通費を無料にするべき',
-    };
-  }); */
+  const { topic, positionA, positionB } = pickTopic(debate.topicList);
 
   const newDebateId = randomUUID();
   const answerDeadline = new Date(Date.now() + ANSWER_DEADLINE_MS);
@@ -99,9 +79,9 @@ const startRematch = async (io: AppServer, debate: Debate): Promise<void> => {
     answerDeadline,
     TOTAL_TURN,
     rematchCount < REMATCH_LIMIT,
+    debate.topicList,
   );
   newDebate.rematchCount = rematchCount;
-  newDebate.usedTopics = [...debate.usedTopics, topic];
 
   shufflePositions(newDebate, positionA, positionB);
 
