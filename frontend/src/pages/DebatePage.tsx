@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { useAtomValue } from 'jotai';
 
 import Button from '../components/Button';
-import TextField from '../components/TextField';
+import TextArea from '../components/TextArea';
 import { socket } from '../socket/socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
 import { userInfoAtom } from '../stores/userAtom';
@@ -13,6 +13,11 @@ import type { DebateChatReceive } from '../types/socket/debateChatReceive';
 import type { JudgeResult } from '../types/socket/judgeResult';
 
 type DebateState = DebateStart;
+
+// Enterキー挙動制御のためにキーボードからデバイスを判定
+const isTouchDevice = window.matchMedia(
+  '(hover: none) and (pointer: coarse)',
+).matches;
 
 function DebatePage() {
   const location = useLocation();
@@ -216,7 +221,7 @@ function DebatePage() {
                   className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-3/4 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-3/4 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                       isMe
                         ? 'bg-[#4c7e63] text-white'
                         : 'bg-[#f2f1ee] text-[#232823]'
@@ -228,28 +233,39 @@ function DebatePage() {
               );
             })}
           </div>
-          <div className="border-t border-[#e4e2dd] p-3.5 flex gap-2.5">
-            <TextField
+          <div className="border-t border-[#e4e2dd] p-3.5 flex items-end gap-2.5">
+            <TextArea
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                // Shift + Enterは改行、Enter単体で送信
+                if (
+                  !isTouchDevice &&
+                  e.key === 'Enter' &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
+                  e.preventDefault();
                   handleSend();
                 }
               }}
               disabled={isInputDisabled}
               maxLength={500}
+              rows={1}
+              autoResize
               placeholder={
                 isDebateFinished
                   ? '判定結果を待っています…'
                   : isMyTurn
-                    ? '主張を入力（Enterで送信）'
+                    ? isTouchDevice
+                      ? '主張を入力'
+                      : '主張を入力（Enterで送信 / Shift + Enterで改行）'
                     : '相手のターンです…'
               }
-              className="flex-1 rounded-xl border-[#e4e2dd] px-3.5 py-3 text-sm focus:border-[#4c7e63]"
+              className="flex-1 max-h-32 rounded-xl border-[#e4e2dd] px-3.5 py-3 text-sm focus:border-[#4c7e63]"
             />
             <Button
-              className="py-0 px-5"
+              className="px-5 flex-shrink-0"
               disabled={isInputDisabled || chatInput.trim() === ''}
               onClick={handleSend}
             >
