@@ -5,10 +5,10 @@ import type { AppSocket } from '../types/events.js';
 import { randomUUID } from 'node:crypto';
 import { Debate } from '../Debate.js';
 import { debates, userDebateIds } from '../stores/user-debate.js';
-import { requestTopic } from '../ai/topic.js';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { getDebateAndJoinedUser } from './syncrequest.js';
 import { z } from 'zod';
+import { pickTopic, TOPICPOOL } from '../topicpool.js';
 
 /** topic:anyChangeRequestのペイロードスキーマ */
 const changeRequestSchema = z.object({ isHopeChangeTopic: z.boolean() });
@@ -87,9 +87,9 @@ const MATCH_CONFIRM_TIMEOUT_MS = 20_000;
 /**
  * モラルスコア許容差を一段階広げるまでの待機時間（ミリ秒）
  *
- * @defaultValue 10_000
+ * @defaultValue 5_000
  */
-const MORAL_SCORE_TOLERANCE_STEP_MS = 10_000;
+const MORAL_SCORE_TOLERANCE_STEP_MS = 5_000;
 
 /**
  * ユーザーがすでにマッチング処理中か判定
@@ -412,19 +412,11 @@ export const matchIsConfirmHandler = async (
 
   // 2名揃ったらタイマー停止（matchingRoomsからの削除はお題生成後に実施）
   stopMatchConfirmTimer(debateId);
-  /**
-   * お題・ポジション・先行後攻を取得
-   *
-   * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
-   */
-  const { topic, positionA, positionB } = await requestTopic().catch((e) => {
-    console.error('topic generation failed', e);
-    return {
-      topic: 'PCのOSはWindowsかMacどちらが優れている?',
-      positionA: 'Windowsが優れている',
-      positionB: 'Macが優れている',
-    };
-  });
+
+  // お題生成処理
+  const initialPool = [...TOPICPOOL];
+  const { topic, positionA, positionB } = pickTopic(initialPool);
+
   // マッチング確認待ちオブジェクトから削除
   matchingRooms.delete(debateId);
 
@@ -442,7 +434,10 @@ export const matchIsConfirmHandler = async (
     answerDeadline,
     TOTAL_TURN,
     true,
+    initialPool,
   );
+
+  debate.topicList = initialPool;
 
   for (const u of debate.users) {
     u.isLeaveWatching = true;
@@ -500,20 +495,12 @@ export const topicAnyChangeRequestHandler = async (
 
   if (isChangeTopic) {
     /**
-     * お題・ポジション・先行後攻を取得
+     * お題再生成
      *
-     * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
-     */
-    const { topic, positionA, positionB } = await requestTopic(
-      debate.topic,
-    ).catch((e) => {
-      console.error('topic generation failed', e);
-      return {
-        topic: '一生無料になるなら外食と交通費どちらを選ぶべきか?',
-        positionA: '外食を無料にするべき',
-        positionB: '交通費を無料にするべき',
-      };
-    });
+     * topicpool.tsないのお題からランダムで選択する
+     * */
+    const { topic, positionA, positionB } = pickTopic(debate.topicList);
+
     debate.topic = topic;
     shufflePositions(debate, positionA, positionB);
   }

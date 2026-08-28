@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAtomValue } from 'jotai';
 
 import Button from '../components/Button';
-import TextField from '../components/TextField';
+import TextArea from '../components/TextArea';
 import { socket } from '../socket/socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
 import { userInfoAtom } from '../stores/userAtom';
@@ -13,6 +13,11 @@ import type { DebateChatReceive } from '../types/socket/debateChatReceive';
 import type { JudgeResult } from '../types/socket/judgeResult';
 
 type DebateState = DebateStart;
+
+// Enterキー挙動制御のためにキーボードからデバイスを判定
+const isTouchDevice = window.matchMedia(
+  '(hover: none) and (pointer: coarse)',
+).matches;
 
 function DebatePage() {
   const location = useLocation();
@@ -28,6 +33,9 @@ function DebatePage() {
   const [chatInput, setChatInput] = useState('');
   // 送信済みで相手からの応答待ちか
   const [isSending, setIsSending] = useState(false);
+
+  // チャット履歴の表示領域（自動スクロール用）
+  const chatAreaRef = useRef<HTMLDivElement>(null);
 
   // ターン全て終了しているか
   const [isDebateFinished, setIsDebateFinished] = useState(
@@ -88,6 +96,17 @@ function DebatePage() {
     // isTimeUpになった瞬間にだけ発火させたいので、chatInput等は依存に含めない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
+
+  // チャットが増えた際に一番下まで自動スクロール
+  useEffect(() => {
+    const chatArea = chatAreaRef.current;
+
+    if (!chatArea) {
+      return;
+    }
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }, [debate?.chatHistory.length]);
 
   function handleSend() {
     const trimmed = chatInput.trim();
@@ -206,7 +225,10 @@ function DebatePage() {
         </div>
 
         <div className="flex-1 min-w-0 w-full bg-white border border-[#e4e2dd] rounded-2xl flex flex-col h-[56vh]">
-          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3">
+          <div
+            ref={chatAreaRef}
+            className="flex-1 overflow-y-auto p-5 flex flex-col gap-3"
+          >
             {debate.chatHistory.map((chat, index) => {
               const isMe = chat.userId === userInfo?.userId;
 
@@ -216,7 +238,7 @@ function DebatePage() {
                   className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-3/4 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-3/4 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                       isMe
                         ? 'bg-[#4c7e63] text-white'
                         : 'bg-[#f2f1ee] text-[#232823]'
@@ -228,28 +250,39 @@ function DebatePage() {
               );
             })}
           </div>
-          <div className="border-t border-[#e4e2dd] p-3.5 flex gap-2.5">
-            <TextField
+          <div className="border-t border-[#e4e2dd] p-3.5 flex items-end gap-2.5">
+            <TextArea
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                // Shift + Enterは改行、Enter単体で送信
+                if (
+                  !isTouchDevice &&
+                  e.key === 'Enter' &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
+                  e.preventDefault();
                   handleSend();
                 }
               }}
               disabled={isInputDisabled}
               maxLength={500}
+              rows={1}
+              autoResize
               placeholder={
                 isDebateFinished
                   ? '判定結果を待っています…'
                   : isMyTurn
-                    ? '主張を入力（Enterで送信）'
+                    ? isTouchDevice
+                      ? '主張を入力'
+                      : '主張を入力（Enterで送信 / Shift + Enterで改行）'
                     : '相手のターンです…'
               }
-              className="flex-1 rounded-xl border-[#e4e2dd] px-3.5 py-3 text-sm focus:border-[#4c7e63]"
+              className="flex-1 max-h-32 rounded-xl border-[#e4e2dd] px-3.5 py-3 text-sm focus:border-[#4c7e63]"
             />
             <Button
-              className="py-0 px-5"
+              className="px-5 flex-shrink-0"
               disabled={isInputDisabled || chatInput.trim() === ''}
               onClick={handleSend}
             >
