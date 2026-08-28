@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import TextArea from '../components/TextArea';
 import { socket } from '../socket/socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
+import { isTouchDevice, isSendKeyEvent } from '../utils/keyboard';
 import { userInfoAtom } from '../stores/userAtom';
 import type { DebateStart } from '../types/socket/debateStart';
 import type { DebateChatSend } from '../types/socket/debateChatSend';
@@ -13,11 +14,6 @@ import type { DebateChatReceive } from '../types/socket/debateChatReceive';
 import type { JudgeResult } from '../types/socket/judgeResult';
 
 type DebateState = DebateStart;
-
-// Enterキー挙動制御のためにキーボードからデバイスを判定
-const isTouchDevice = window.matchMedia(
-  '(hover: none) and (pointer: coarse)',
-).matches;
 
 function DebatePage() {
   const location = useLocation();
@@ -256,12 +252,7 @@ function DebatePage() {
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
                 // Shift + Enterは改行、Enter単体で送信
-                if (
-                  !isTouchDevice &&
-                  e.key === 'Enter' &&
-                  !e.shiftKey &&
-                  !e.nativeEvent.isComposing
-                ) {
+                if (isSendKeyEvent(e)) {
                   e.preventDefault();
                   handleSend();
                 }
