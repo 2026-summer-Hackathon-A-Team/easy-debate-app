@@ -25,8 +25,10 @@ type ResultTheme = {
   text: string;
   // 残り時間バッジ(淡い背景 + 濃い文字)
   badge: string;
-  // 塗りつぶしボタン・自分のお礼吹き出し
+  // 塗りつぶしボタン
   solid: string;
+  // 自分のお礼吹き出し
+  bubble: string;
   // 固定お礼メッセージボタンのホバー時の枠線
   hoverBorder: string;
 };
@@ -35,6 +37,7 @@ const WINNER_THEME: ResultTheme = {
   text: 'text-[#4c7e63]',
   badge: 'bg-[#e9f1ec] text-[#375b47]',
   solid: 'bg-[#4c7e63] hover:bg-[#416b54]',
+  bubble: 'bg-[#4c7e63]',
   hoverBorder: 'hover:border-[#6f9882]',
 };
 
@@ -42,6 +45,7 @@ const LOSER_THEME: ResultTheme = {
   text: 'text-[#8b592b]',
   badge: 'bg-[#f5ece1] text-[#7a4a20]',
   solid: 'bg-[#8b592b] hover:bg-[#784c24]',
+  bubble: 'bg-[#8b592b]',
   hoverBorder: 'hover:border-[#a9784a]',
 };
 
@@ -376,7 +380,7 @@ function JudgeResultPage() {
                         <div
                           className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
                             isMe
-                              ? `${theme.solid} text-white`
+                              ? `${theme.bubble} text-white`
                               : 'bg-[#f2f1ee] text-[#232823]'
                           }`}
                         >
