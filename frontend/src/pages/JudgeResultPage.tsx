@@ -8,6 +8,7 @@ import TextField from '../components/TextField';
 import Modal from '../components/Modal';
 import { socket } from '../socket/socket';
 import useCountdownTimer from '../hooks/useCountdownTimer';
+import { isSendKeyEvent } from '../utils/keyboard';
 import { userInfoAtom } from '../stores/userAtom';
 import type { ThanksHistoryItem } from '../types/sync/common';
 import type { JudgeResult } from '../types/socket/judgeResult';
@@ -342,7 +343,8 @@ function JudgeResultPage() {
                         value={thanksInput}
                         onChange={(e) => setThanksInput(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (isSendKeyEvent(e)) {
+                            e.preventDefault();
                             sendFreeThanks(thanksInput.trim());
                           }
                         }}
