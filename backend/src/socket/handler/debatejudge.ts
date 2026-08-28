@@ -3,6 +3,7 @@ import { requestJudge } from '../ai/judge.js';
 import type { Debate } from '../Debate.js';
 import type { AppServer } from '../index.js';
 import { debateRoom } from '../rooms.js';
+import { userDebateIds } from '../stores/user-debate.js';
 import { startJudgeConfirmDeadline } from './rematch.js';
 
 /** 判定に必要な情報 */
@@ -412,6 +413,17 @@ export const processJudge = async (
 
   for (const u of debate.users) {
     u.isLeaveWatching = false;
+  }
+
+  if (debate.violation.violationUserId !== undefined) {
+    const violationUser = debate.users.find(
+      (u) => u.userId === debate.violation.violationUserId,
+    );
+    if (violationUser !== undefined) {
+      violationUser.isRematchAnswered = true;
+      violationUser.isHopeRematch = false;
+    }
+    userDebateIds.delete(debate.violation.violationUserId);
   }
 
   startJudgeConfirmDeadline(io, debateId);
