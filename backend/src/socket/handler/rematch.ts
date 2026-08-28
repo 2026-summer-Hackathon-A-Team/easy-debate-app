@@ -200,5 +200,11 @@ export const rematchAnyRequestHandler = async (
 
   user.isRematchAnswered = true;
   user.isHopeRematch = parsed.data.isHopeRematch;
+
+  if (!parsed.data.isHopeRematch) {
+    userDebateIds.delete(userId);
+    socket.emit('rematch:anyResult', { isRematchResult: false });
+  }
+
   await resolveRematch(io, debate);
 };
