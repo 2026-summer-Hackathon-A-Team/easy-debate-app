@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAtomValue } from 'jotai';
 
@@ -33,6 +33,9 @@ function DebatePage() {
   const [chatInput, setChatInput] = useState('');
   // 送信済みで相手からの応答待ちか
   const [isSending, setIsSending] = useState(false);
+
+  // チャット履歴の表示領域（自動スクロール用）
+  const chatAreaRef = useRef<HTMLDivElement>(null);
 
   // ターン全て終了しているか
   const [isDebateFinished, setIsDebateFinished] = useState(
@@ -93,6 +96,17 @@ function DebatePage() {
     // isTimeUpになった瞬間にだけ発火させたいので、chatInput等は依存に含めない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
+
+  // チャットが増えた際に一番下まで自動スクロール
+  useEffect(() => {
+    const chatArea = chatAreaRef.current;
+
+    if (!chatArea) {
+      return;
+    }
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }, [debate?.chatHistory.length]);
 
   function handleSend() {
     const trimmed = chatInput.trim();
@@ -211,7 +225,10 @@ function DebatePage() {
         </div>
 
         <div className="flex-1 min-w-0 w-full bg-white border border-[#e4e2dd] rounded-2xl flex flex-col h-[56vh]">
-          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3">
+          <div
+            ref={chatAreaRef}
+            className="flex-1 overflow-y-auto p-5 flex flex-col gap-3"
+          >
             {debate.chatHistory.map((chat, index) => {
               const isMe = chat.userId === userInfo?.userId;
 
