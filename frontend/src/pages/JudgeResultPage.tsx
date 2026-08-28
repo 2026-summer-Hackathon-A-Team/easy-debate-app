@@ -19,6 +19,31 @@ import type { RematchResult } from '../types/socket/rematchResult';
 // お礼メッセージは自分の送信分がこの通数に達すると送れなくなる
 const THANKS_LIMIT = 5;
 
+type ResultTheme = {
+  // 見出し・レート増減などの文字色
+  text: string;
+  // 残り時間バッジ(淡い背景 + 濃い文字)
+  badge: string;
+  // 塗りつぶしボタン・自分のお礼吹き出し
+  solid: string;
+  // 固定お礼メッセージボタンのホバー時の枠線
+  hoverBorder: string;
+};
+
+const WINNER_THEME: ResultTheme = {
+  text: 'text-[#4c7e63]',
+  badge: 'bg-[#e9f1ec] text-[#375b47]',
+  solid: 'bg-[#4c7e63] hover:bg-[#416b54]',
+  hoverBorder: 'hover:border-[#6f9882]',
+};
+
+const LOSER_THEME: ResultTheme = {
+  text: 'text-[#8b592b]',
+  badge: 'bg-[#f5ece1] text-[#7a4a20]',
+  solid: 'bg-[#8b592b] hover:bg-[#784c24]',
+  hoverBorder: 'hover:border-[#a9784a]',
+};
+
 type RematchStatus = 'idle' | 'waiting' | 'declined';
 
 type JudgeResultPageState = JudgeResult & {
@@ -212,6 +237,8 @@ function JudgeResultPage() {
     state.users.find((user) => user.userId === userInfo?.userId) ??
     state.users[0];
 
+  const theme = me.isWinner ? WINNER_THEME : LOSER_THEME;
+
   // 対戦中の違反・不戦敗の場合はお礼・再対戦の受付を行わない
   const isForfeit =
     state.violation.isMoralViolationOfBattle ||
@@ -222,30 +249,19 @@ function JudgeResultPage() {
     <>
       <div className="max-w-lg mx-auto px-5 py-10">
         <div className="flex flex-col items-center">
-          <div className="rounded-full bg-[#e8f0eb] px-5.5 py-2.5 flex items-center gap-2">
-            <span className="text-xs font-bold text-[#2c4d3b]">残り時間</span>
-            <span className="text-lg font-extrabold text-[#2c4d3b]">
-              {remainingSeconds}秒
-            </span>
+          <div
+            className={`rounded-full ${theme.badge} px-5.5 py-2.5 flex items-center gap-2`}
+          >
+            <span className="text-xs font-bold">残り時間</span>
+            <span className="text-lg font-extrabold">{remainingSeconds}秒</span>
           </div>
         </div>
 
         <div className="mt-4.5 rounded-3xl border border-[#e4e2dd] bg-white py-9 px-7.5 text-center">
-          <div className="text-xs font-extrabold text-[#8a8f89] tracking-wide">
-            AI判定
-          </div>
-          <div className="text-5xl mt-3">{me.isWinner ? '🏆' : '🍃'}</div>
-          <Heading
-            level={1}
-            className={`mt-3 ${me.isWinner ? 'text-[#2c6a4a]' : 'text-[#8a5a2e]'}`}
-          >
-            {me.isWinner ? 'あなたの勝ち' : 'あなたの負け'}
+          <Heading level={1} className={`text-6xl mt-0.5 ${theme.text}`}>
+            {me.isWinner ? '勝利' : '敗北'}
           </Heading>
-          <div
-            className={`text-xs font-bold mt-1 ${
-              me.isWinner ? 'text-[#3f6a52]' : 'text-[#8a5a2e]'
-            }`}
-          >
+          <div className={`text-md font-bold mt-2 ${theme.text}`}>
             レート {me.rateUpDown > 0 ? '+' : ''}
             {me.rateUpDown}（{me.updatedRate}）
           </div>
@@ -290,7 +306,10 @@ function JudgeResultPage() {
                 )}
               </p>
             </div>
-            <Button className="mt-5 w-full" onClick={handleGoHome}>
+            <Button
+              className={`mt-5 w-full ${theme.solid}`}
+              onClick={handleGoHome}
+            >
               ホームへ
             </Button>
           </>
@@ -313,7 +332,7 @@ function JudgeResultPage() {
                       <button
                         key={preset.fixedThanksId}
                         onClick={() => sendFixedThanks(preset.fixedThanksId)}
-                        className="rounded-full border border-[#e4e2dd] bg-[#f7f6f3] px-4 py-2 text-xs font-bold text-[#4a504a] hover:border-[#4c7e63] cursor-pointer"
+                        className={`rounded-full border border-[#e4e2dd] bg-[#f7f6f3] px-4 py-2 text-xs font-bold text-[#4a504a] ${theme.hoverBorder} cursor-pointer`}
                       >
                         {preset.fixedThanksMsg}
                       </button>
@@ -333,7 +352,7 @@ function JudgeResultPage() {
                       />
                       <button
                         onClick={() => sendFreeThanks(thanksInput.trim())}
-                        className="rounded-full bg-[#4c7e63] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#3f6a52] cursor-pointer"
+                        className={`rounded-full ${theme.solid} px-4 py-1.5 text-xs font-bold text-white cursor-pointer`}
                       >
                         送信
                       </button>
@@ -355,7 +374,7 @@ function JudgeResultPage() {
                         <div
                           className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
                             isMe
-                              ? 'bg-[#4c7e63] text-white'
+                              ? `${theme.solid} text-white`
                               : 'bg-[#f2f1ee] text-[#232823]'
                           }`}
                         >
@@ -373,7 +392,7 @@ function JudgeResultPage() {
                   className={`w-full mt-4 rounded-xl py-3 text-sm font-bold cursor-pointer ${
                     isThanksCollapsed
                       ? 'border border-[#e4e2dd] bg-white text-[#6f766f]'
-                      : 'bg-[#4c7e63] text-white hover:bg-[#3f6a52]'
+                      : `${theme.solid} text-white`
                   }`}
                 >
                   {isThanksCollapsed ? 'メッセージ入力に戻る' : 'お礼を終える'}
@@ -394,7 +413,7 @@ function JudgeResultPage() {
                       再戦を希望しない
                     </Button>
                     <Button
-                      className="flex-1"
+                      className={`flex-1 ${theme.solid}`}
                       disabled={rematchStatus !== 'idle'}
                       onClick={() => handleRematchChoice(true)}
                     >
@@ -410,7 +429,10 @@ function JudgeResultPage() {
                     <p className="text-sm text-[#a6572f] font-bold">
                       ※再対戦の上限回数に達しました
                     </p>
-                    <Button className="mt-3 w-full" onClick={handleGoHome}>
+                    <Button
+                      className={`mt-3 w-full ${theme.solid}`}
+                      onClick={handleGoHome}
+                    >
                       ホームへ
                     </Button>
                   </div>
@@ -433,7 +455,10 @@ function JudgeResultPage() {
             <br />
             このメッセージは相手に送信されませんでした。
           </p>
-          <Button className="mt-5 w-full" onClick={handleGoHome}>
+          <Button
+            className={`mt-5 w-full ${theme.solid}`}
+            onClick={handleGoHome}
+          >
             ホームへ
           </Button>
         </Modal>
