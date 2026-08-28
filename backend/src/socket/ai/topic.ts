@@ -1,3 +1,7 @@
+// AIによるお題選定の精度が安定しない為、
+// 今回はあらかじめ用意したお題での運用に切り替えた。
+// 以下記述コードは今回未使用
+
 import { z } from 'zod';
 import { requestText } from './ai-client.js';
 import { TOPIC_SELECTION_PROMPT } from './prompt/topicprompt.js';

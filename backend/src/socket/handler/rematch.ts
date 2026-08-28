@@ -9,10 +9,10 @@ import {
   shufflePositions,
   TOTAL_TURN,
 } from './matching.js';
-import { requestTopic } from '../ai/topic.js';
 import { JUDGE_CONFIRM_DEADLINE_MS } from './debatejudge.js';
 import type { AppSocket } from '../types/events.js';
 import { getDebateAndJoinedUser } from './syncrequest.js';
+import { pickTopic } from '../topicpool.js';
 
 /** 再対戦可能な最大回数（この回数に達したら次は不可） */
 const REMATCH_LIMIT = 2;
@@ -53,18 +53,6 @@ export const stopJudgeConfirmTimer = (debateId: string): void => {
 };
 
 /**
- * インスタンス・ストアを全て削除し、両者切断する
- */
-const destroyDebateAndDisconnect = (io: AppServer, debate: Debate): void => {
-  stopJudgeConfirmTimer(debate.debateId);
-  io.in(debateRoom(debate.debateId)).disconnectSockets(true);
-  debates.delete(debate.debateId);
-  for (const u of debate.users) {
-    userDebateIds.delete(u.userId);
-  }
-};
-
-/**
  * 再対戦を成立させる
  *
  * 新しいdebateIdでインスタンスを作り直し、TOPIC_CHANGEへ遷移する */
@@ -79,11 +67,19 @@ const startRematch = async (io: AppServer, debate: Debate): Promise<void> => {
 
   const rematchCount = debate.rematchCount + 1;
 
+  const { topic, positionA, positionB } = pickTopic(debate.usedTopics);
+
   /**
+   * AIによるお題選定の精度が安定しない為、今回未使用
+   *
+   * AIお題生成に切り替える場合、
+   * 「const { topic, positionA, positionB } = pickTopic(debate.usedTopics);」
+   * をコメントアウトし、下記処理のコメントアウトを解除する
+   * 
    * お題・ポジション・先行後攻を取得
    *
    * APIからのレスポンスの形式チェックが2回失敗すると何も返さない為、固定のお題を返してあげる
-   */
+   *
   const { topic, positionA, positionB } = await requestTopic().catch((e) => {
     console.error('topic generation failed', e);
     return {
@@ -91,7 +87,7 @@ const startRematch = async (io: AppServer, debate: Debate): Promise<void> => {
       positionA: '外食を無料にするべき',
       positionB: '交通費を無料にするべき',
     };
-  });
+  }); */
 
   const newDebateId = randomUUID();
   const answerDeadline = new Date(Date.now() + ANSWER_DEADLINE_MS);
@@ -105,6 +101,7 @@ const startRematch = async (io: AppServer, debate: Debate): Promise<void> => {
     rematchCount < REMATCH_LIMIT,
   );
   newDebate.rematchCount = rematchCount;
+  newDebate.usedTopics = [...debate.usedTopics, topic];
 
   shufflePositions(newDebate, positionA, positionB);
 

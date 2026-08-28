@@ -74,6 +74,8 @@ export class Debate {
   thanksHistory: { userId: number; thanksMsg: string }[];
   /** このセッション内での再戦回数 */
   rematchCount: number;
+  // 選択済みのお題
+  usedTopics: string[];
 
   /** 勝敗判定結果 */
   judge?: {
@@ -147,5 +149,6 @@ export class Debate {
       isMoralViolationOfThanks: false,
     };
     this.rematchCount = 0;
+    this.usedTopics = [topic];
   }
 }
