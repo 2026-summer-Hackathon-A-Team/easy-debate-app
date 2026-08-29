@@ -190,11 +190,6 @@ export const rematchAnyRequestHandler = async (
 
   const { debate, user } = getDebateAndJoinedUser(debateId, userId);
 
-  if (user.isThanksPenalized === true) {
-    userDebateIds.delete(userId);
-    return;
-  }
-
   // すでに回答済みなら無視
   if (user.isRematchAnswered === true) return;
   // 再対戦の受付がない場合は無視
@@ -206,8 +201,8 @@ export const rematchAnyRequestHandler = async (
   user.isRematchAnswered = true;
   user.isHopeRematch = parsed.data.isHopeRematch;
 
-  if (!parsed.data.isHopeRematch) {
-    userDebateIds.delete(userId);
+  if (!user.isHopeRematch) {
+    userDebateIds.delete(user.userId);
     socket.emit('rematch:anyResult', { isRematchResult: false });
   }
 

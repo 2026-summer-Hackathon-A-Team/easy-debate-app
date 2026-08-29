@@ -107,6 +107,8 @@ export const thanksSendHandler = async (
 
     // ペナルティ確定、再対戦希望false
     user.isThanksPenalized = true;
+    user.isHopeRematch = false;
+    user.isRematchAnswered = false;
     debate.violation.isMoralViolationOfThanks = true;
     debate.violation.violationUserId = userId;
 
