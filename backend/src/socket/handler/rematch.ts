@@ -190,6 +190,11 @@ export const rematchAnyRequestHandler = async (
 
   const { debate, user } = getDebateAndJoinedUser(debateId, userId);
 
+  if (debate.violation.isMoralViolationOfThanks === true) {
+    userDebateIds.delete(userId);
+    return;
+  }
+
   // すでに回答済みなら無視
   if (user.isRematchAnswered === true) return;
   // 再対戦の受付がない場合は無視
