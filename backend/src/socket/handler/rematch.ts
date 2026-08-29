@@ -190,7 +190,7 @@ export const rematchAnyRequestHandler = async (
 
   const { debate, user } = getDebateAndJoinedUser(debateId, userId);
 
-  if (debate.violation.isMoralViolationOfThanks === true) {
+  if (user.isThanksPenalized === true) {
     userDebateIds.delete(userId);
     return;
   }
