@@ -168,7 +168,7 @@ function DebatePage() {
                 {me.position}
               </span>
               {isMyTurn && (
-                <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0 mx-auto">
+                <span className="text-xs font-extrabold text-[#2c4d3b] bg-[#cfe1d6] rounded-full px-2 py-0.5 whitespace-nowrap shrink-0 ml-auto">
                   あなた
                 </span>
               )}
