@@ -70,4 +70,82 @@ async function getUserInfo(): Promise<UserInfo> {
   throw new ApiError(response.status, 'ユーザー情報の取得に失敗しました');
 }
 
+// ユーザー名を変更する
+async function updateUserName(
+  data: UpdateUserNameRequest,
 ): Promise<UpdateUserNameResponse> {
+  const response = await client.api.v1.users.me.$patch({ json: data });
+
+  if (response.status === 200) {
+    return (await response.json()) as UpdateUserNameResponse;
+  }
+
+  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
+  if (response.status === 401) {
+    throw new ApiError(response.status, 'UNAUTHORIZED');
+  }
+
+  // 400(入力値NG)/409(ユーザー名重複): 呼び出し元がモーダルを出し分けるためのエラー
+  if (response.status === 400 || response.status === 409) {
+    const body = (await response.json()) as ErrorResponseBody;
+
+    throw new ApiError(
+      response.status,
+      body.errorMsg ?? 'ユーザー名の変更に失敗しました',
+    );
+  }
+
+  throw new ApiError(response.status, 'ユーザー名の変更に失敗しました');
+}
+
+// ログイン中のユーザーのパスワードを変更する。成功時はレスポンスボディ無し
+async function updatePassword(data: UpdatePasswordRequest): Promise<void> {
+  const response = await client.api.v1.users.me.password.$put({
+    json: data,
+  });
+
+  if (response.status === 204) {
+    return;
+  }
+
+  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
+  if (response.status === 401) {
+    throw new ApiError(response.status, 'UNAUTHORIZED');
+  }
+
+  // 400(入力値NG)/422(現在のパスワード誤り): 呼び出し元がモーダルを出し分けるためのエラー
+  if (response.status === 400 || response.status === 422) {
+    const body = (await response.json()) as ErrorResponseBody;
+
+    throw new ApiError(
+      response.status,
+      body.errorMsg ?? 'パスワードの変更に失敗しました',
+    );
+  }
+
+  throw new ApiError(response.status, 'パスワードの変更に失敗しました');
+}
+
+// ログイン中のユーザーを退会させる。成功時はレスポンスボディ無し
+async function cancelMembership(): Promise<void> {
+  const response = await client.api.v1.users.me.$delete();
+
+  if (response.status === 204) {
+    return;
+  }
+
+  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
+  if (response.status === 401) {
+    throw new ApiError(response.status, 'UNAUTHORIZED');
+  }
+
+  throw new ApiError(response.status, '退会処理に失敗しました');
+}
+
+export {
+  registerUser,
+  getUserInfo,
+  updateUserName,
+  updatePassword,
+  cancelMembership,
+};
