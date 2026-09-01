@@ -20,7 +20,7 @@ function SigninPage() {
   const navigate = useNavigate();
   const setLoginStatus = useSetAtom(loginStatusAtom);
 
-  // SignupPage(登録完了後の「ログインへ」)からnavigateのstateで渡ってくる、入力済みのユーザー名
+  // SignupPage（登録完了後の「ログインへ」）からの遷移で渡ってくる入力済みのユーザー名
   const prefillUserName =
     (location.state as { userName?: string } | null)?.userName ?? '';
 
@@ -34,6 +34,9 @@ function SigninPage() {
   const isPasswordValid = passwordSchema.safeParse(password).success;
   const canSubmit = isUserNameValid && isPasswordValid && !isSubmitting;
 
+  /**
+   * ログイン認証
+   */
   async function handleSubmit() {
     if (!canSubmit) {
       return;
@@ -50,7 +53,7 @@ function SigninPage() {
       if (error instanceof ApiError && error.status === 401) {
         setModal('credentialsError');
       }
-      // それ以外(入力値NG・想定外のエラー)
+      // それ以外（入力値NG or 想定外のエラー）
       else {
         setErrorMessage(
           error instanceof ApiError ? error.message : 'ログインに失敗しました',

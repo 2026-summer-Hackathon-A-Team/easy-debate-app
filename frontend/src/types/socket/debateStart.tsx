@@ -1,6 +1,6 @@
 import type { ChatHistoryItem, JoinUser, TurnInfo } from '../sync/common';
 
-// debate:start イベントのペイロード（両者の開始合図が揃った際にサーバーから送られる）
+// debate:start イベントのペイロード
 type DebateStart = {
   topic: string;
   users: [JoinUser, JoinUser];

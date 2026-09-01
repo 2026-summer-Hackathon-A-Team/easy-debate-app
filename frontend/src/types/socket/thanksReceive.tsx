@@ -1,6 +1,6 @@
 import type { ThanksHistoryItem } from '../sync/common';
 
-// thanks:receive イベントのペイロード（両者のお礼をまとめてサーバーから受け取る）
+// thanks:receive イベントのペイロード
 type ThanksReceive = {
   thanksHistory: ThanksHistoryItem[];
 };

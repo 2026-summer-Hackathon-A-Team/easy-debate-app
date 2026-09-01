@@ -14,13 +14,14 @@ const SYNC_TIMEOUT_MS = 5000;
 function SocketManager() {
   const location = useLocation();
   const navigate = useNavigate();
-  // 接続失敗・意図しない切断・sync:resultの応答無しを検知した際に表示する
+
+  // 「接続失敗 or 意図しない切断 or sync:resultの応答無し」を検知した際に表示するモーダル
   const [showReconnectModal, setShowReconnectModal] = useState(false);
 
   useEffect(() => {
     let syncTimeoutId: number | undefined;
-    // sync:resultでの遷移を履歴に積む(push)か、今の履歴を上書きする(replace)か。
-    // ブラウザバック直後だけは1つ前の画面に居るため、正しい画面を積み直す必要がある
+    // sync:resultでの遷移を履歴に追加するか、今の履歴を上書きするか
+    // （ブラウザバック直後だけは1つ前の画面に居るため、正しい画面を積み直す必要あり）
     let shouldPushOnSync = false;
 
     function clearSyncTimeout() {
@@ -30,11 +31,13 @@ function SocketManager() {
       }
     }
 
+    /**
+     * データ同期を依頼
+     */
     function requestSync() {
-      // 前回分が残っていると、応答があったのに後から誤検知してしまうため必ず消す
       clearSyncTimeout();
 
-      // 残り秒数の表示ズレ補正用に、まず自端末とサーバーの時計のズレを測っておく
+      // 残り秒数の表示ズレ補正用に、自端末とサーバー側の時刻のズレを測る
       syncClock();
       socket.emit('sync:request');
 
@@ -44,18 +47,20 @@ function SocketManager() {
       }, SYNC_TIMEOUT_MS);
     }
 
+    /**
+     * Socket接続時の処理
+     */
     function handleConnect() {
-      // 接続直後の同期は「今いる画面を正しい画面に直す」だけなので履歴は増やさない
+      // 接続直後の同期は「今いる画面を正しい画面に直す」だけなので履歴は追加しない
       shouldPushOnSync = false;
       requestSync();
     }
 
     function handleBrowserBack() {
-      // 1つ前の画面へ移動してしまっているので、正しい画面を履歴へ積み直す
+      // 1つ前の画面へ移動してしまっているので、正しい画面を履歴へ追加し直す
       shouldPushOnSync = true;
 
-      // 何らかの理由で切断されていた場合は、まず繋ぎ直す
-      // (接続できればconnectイベント経由でsync:requestが飛ぶ)
+      // 何らかの理由で切断されていた場合は繋ぎ直す
       if (!socket.connected) {
         socket.connect();
         return;
@@ -64,13 +69,23 @@ function SocketManager() {
       requestSync();
     }
 
+    /**
+     * 接続エラー時の処理
+     */
     function handleConnectError() {
       clearSyncTimeout();
       setShowReconnectModal(true);
     }
 
+    /**
+     * 切断時の処理
+     *
+     * @param reason 切断理由
+     * @returns void
+     */
     function handleDisconnect(reason: string) {
-      // unmount時のsocket.disconnect()等、自分自身が意図して切断した場合は対象外
+      // アンマウント時のsocket.disconnect()等
+      // 自分自身が意図して切断した場合は対象外
       if (reason === 'io client disconnect') {
         return;
       }
@@ -79,12 +94,16 @@ function SocketManager() {
       setShowReconnectModal(true);
     }
 
+    /**
+     * フェーズごとに適した画面へ遷移
+     *
+     * @param path 遷移先パス
+     * @param state 同期したデータ（ペイロード）
+     */
     function goToPhasePage(path: string, state?: unknown) {
       navigate(path, { state, replace: !shouldPushOnSync });
     }
 
-    // 遷移先の画面が期待する項目は元々dataのサブセットなので、そのまま渡す
-    // (項目を1つずつ書き写すと、sync:resultに項目が増えたときに書き漏らす恐れがあるため)
     function handleSyncResult(data: SyncResult) {
       clearSyncTimeout();
 
@@ -108,19 +127,12 @@ function SocketManager() {
         return;
       }
 
-      // JUDGE_WAITING(判定待ち)は、相手の最後のチャットを確認してもらうために
-      // 15秒ステイしているだけの状態。judgeが含まれていればカウントダウン表示用に
-      // 渡すが、violationはこの時点でサーバーからまだ送られてこない(判定確定前のため)
-      // ので絶対に補って組み立てない。JudgeResultPage側で「violationが届くまでは
-      // カウントダウンが0になっても公開しない」ガードをかけ、本物のjudge:resultを待つ
       if (data.phase === 'JUDGE_WAITING') {
         goToPhasePage('/debates/chat', data);
         return;
       }
 
       if (data.phase === 'JUDGE') {
-        // sync:resultはjudge配下にネストしているが、JudgeResultPageは
-        // judge:result(フラット)の形を前提に読むため、ここで展開して形を揃える
         const { judge, ...rest } = data;
 
         goToPhasePage('/debates/judge', { ...rest, ...judge });
@@ -135,8 +147,7 @@ function SocketManager() {
     socket.on('disconnect', handleDisconnect);
     socket.on('sync:result', handleSyncResult);
 
-    // /debates/*に入ったらここで接続する。リロード・再接続もこの経路に集約することで、
-    // どの画面から入り直しても必ずsync:requestが飛ぶようにする
+    // /debates/* の範囲に遷移したらここで接続
     if (!socket.connected) {
       socket.connect();
     }
@@ -151,25 +162,22 @@ function SocketManager() {
       socket.off('disconnect', handleDisconnect);
       socket.off('sync:result', handleSyncResult);
 
-      // SocketManagerがアンマウントされた(=/debates/*から離れた)ら接続を破棄する
+      // SocketManagerがアンマウントされた(=/debates/* から離脱)ら接続を破棄
       socket.disconnect();
     };
-    // navigateは依存に含めない: react-routerではpathnameが変わるたびに参照が
-    // 作り直されるため、依存に入れると/debates/*内で画面遷移するたびにこのeffectが
-    // 再実行され、その都度disconnect()が呼ばれて通信が切れてしまう。
-    // ここで呼ぶnavigate()は全て絶対パスなので、マウント時に捕まえた参照のままで問題ない
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 再接続を試みるため、現在の画面を読み込み直す
+  /**
+   * 再接続を試みるため、現在の画面を読み込み直す
+   */
   function handleReconnect() {
     window.location.reload();
   }
 
   return (
     <>
-      {/* 同じパスへ再度navigateされた場合(sync:resultでの復元など)も
-          遷移先の画面がstateを取り直せるよう、履歴のキーで作り直す */}
       <Outlet key={location.key} />
 
       {showReconnectModal && (
