@@ -10,7 +10,7 @@ import { getUserInfo } from '../api/userApi';
 import { signout } from '../api/authApi';
 import { loginStatusAtom, userInfoAtom } from '../stores/userAtom';
 
-// ログインしていなくてもアクセスできるページ(AuthWrapperと同じ定義)
+// ログインしていなくてもアクセス可能なページ
 const publicPaths = ['/signin', '/signup'];
 
 function Header() {
@@ -22,10 +22,10 @@ function Header() {
 
   const store = useStore();
 
-  // 現在のパスが「未ログインでも見られるページ」かどうか
+  // 現在のパスがログインしていなくてもアクセス可能なページかどうか判定
   const isPublicPage = publicPaths.includes(location.pathname);
 
-  // ログイン済みと分かったら、ユーザー情報を取得する(初期処理)
+  // ログイン済みの場合、続けてユーザー情報を取得
   useEffect(() => {
     if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
@@ -35,7 +35,7 @@ function Header() {
       return;
     }
 
-    // 先に呼び出す側としてフラグを立てる
+    // 2重呼び出し防止
     store.set(isFetchingUserInfoAtom, true);
 
     async function fetchUserInfo() {
@@ -44,13 +44,13 @@ function Header() {
 
         setUserInfo(data);
       } catch (error) {
-        // 401(未認証)ならセッションが無効なので、関連するstoreを全て初期化しつつログインチェックからやり直す
+        // 未認証の場合はログイン画面へ
         if (error instanceof ApiError && error.status === 401) {
           window.location.replace('/signin');
           return;
         }
 
-        // それ以外のエラーは想定外のためエラーページへ(ログインチェックも未確認に戻す)
+        // それ以外のエラーは想定外のためエラー画面へ
         setLoginStatus('unchecked');
         navigate('/500');
       } finally {
@@ -69,12 +69,12 @@ function Header() {
     store,
   ]);
 
-  // 成功でも失敗でもログインステータス・ユーザー情報を初期化してログイン画面へ戻す
+  // ログアウト
   async function handleLogout() {
     try {
       await signout();
     } catch {
-      // ログアウト自体は続行するので、ここでのエラーは無視する
+      // ログアウト自体は続行するため、エラーは無視
     } finally {
       setLoginStatus('loggedOut');
       setUserInfo(null);

@@ -22,11 +22,15 @@ function DebatePage() {
   const userInfo = useAtomValue(userInfoAtom);
 
   const [debate, setDebate] = useState(location.state as DebateState);
-  // 発言期限までの残り秒数(debateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+
+  // 発言期限までの残り秒数
   const remainingSeconds = useCountdownTimer(
     debate?.chatSubmitDeadline ?? new Date(0).toISOString(),
   );
+
+  // チャット内容（入力中）
   const [chatInput, setChatInput] = useState('');
+
   // 送信済みで相手からの応答待ちか
   const [isSending, setIsSending] = useState(false);
 
@@ -38,12 +42,13 @@ function DebatePage() {
     debate !== null && debate?.turn.totalTurn + 1 <= debate?.turn.currentTurn,
   );
 
+  // 自分のターンか
   const isMyTurn = debate?.turn.isCurrentTurnUserId === userInfo?.userId;
 
-  // 発言期限が0になったか(debateが届くまでは常にfalse扱い)
+  // 発言期限が切れたか
   const isTimeUp = debate !== null && remainingSeconds <= 0;
 
-  // チャットの応答と勝敗判定結果を監視する
+  // チャットの応答と勝敗判定結果を監視
   useEffect(() => {
     function handleChatReceive(data: DebateChatReceive) {
       setDebate(data);
@@ -54,7 +59,7 @@ function DebatePage() {
       setIsSending(false);
     }
 
-    // 判定結果がjudge:resultで返却されたら、3秒後にJudgeResultPageに遷移する
+    // 判定結果がjudge:resultで返却されたら、3秒後にJudgeResultPageへ遷移
     // （ユーザーに最後のチャットを読んでもらう猶予を与えるため）
     let timer: number;
 
@@ -72,28 +77,25 @@ function DebatePage() {
       socket.off('debate:chatReceive', handleChatReceive);
       socket.off('judge:result', handleJudgeResult);
     };
-    // navigateは依存に含めない(socketManager.tsxと同じ理由: pathnameが変わるたびに
-    // 参照が作り直され、このeffectが不要に再実行されてしまうため)
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 発言期限が切れたら、入力中の内容(空でも)をそのまま自動送信する。
-  // 送信結果のstate更新はdebate:chatReceive側で行うため、ここではsocket.emitのみ行う。
-  // 全ターン終了後(JUDGE_WAITING)は発言期限自体が存在せず、debateにchatSubmitDeadlineが
-  // 含まれないため常に期限切れ扱いになる。この状態で送るとサーバー側で弾かれるので除外する
+  // 発言期限が切れたら、入力中の内容（空でも）をそのまま自動送信
   useEffect(() => {
     if (isMyTurn && !isSending && isTimeUp && !isDebateFinished) {
       const payload: DebateChatSend = { chatMsg: chatInput.trim() };
 
       socket.emit('debate:chatSend', payload);
+
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSending(true);
     }
-    // isTimeUpになった瞬間にだけ発火させたいので、chatInput等は依存に含めない
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
 
-  // チャットが増えた際に一番下まで自動スクロール
+  // チャットが追加された際に一番下まで自動スクロール
   useEffect(() => {
     const chatArea = chatAreaRef.current;
 
@@ -116,11 +118,12 @@ function DebatePage() {
     socket.emit('debate:chatSend', payload);
     setIsSending(true);
   }
-  // isTimeUp中・判定結果待機中は次に進めないようにする(タイムアウト自動送信の二重送信防止)
+
+  // isTimeUp中・判定結果待機中は次に進めないようにする（タイムアウト自動送信の二重送信防止）
   const isInputDisabled =
     !isMyTurn || isSending || isTimeUp || isDebateFinished;
 
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  // sync:resultを受け取り改めてnavigateしてくるまで何も描画しない
   if (!debate) {
     return null;
   }
@@ -132,8 +135,8 @@ function DebatePage() {
     debate.users.find((user) => user.userId !== userInfo?.userId) ??
     debate.users[1];
 
-  // ターン進捗ドット1つぶんの色を決める
-  // (完了済みは実際に発言したユーザー、現在のターンは今の手番のユーザーの色にする)
+  // ターン進捗ドット1つ分の色を決める
+  // (完了済みは実際に発言したユーザー, 現在のターンは現在のターンのユーザーの色へ)
   function turnDotColor(turnNumber: number) {
     if (turnNumber > debate!.turn.currentTurn) {
       return '#e4e2dd';
@@ -251,7 +254,7 @@ function DebatePage() {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
-                // Shift + Enterは改行、Enter単体で送信
+                // Shift + Enterは改行, Enter単体で送信
                 if (isSendKeyEvent(e)) {
                   e.preventDefault();
                   handleSend();

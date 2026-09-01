@@ -12,13 +12,13 @@ import { topicAnyChangeRequest } from './endpoint/topic_anyChangeRequest';
 /**
  * クライアントから届くイベントと、その応答の対応表
  *
- * レスポンス内容を変える場合は endpoint/ の各ファイルを書き換える
+ * レスポンス内容を変える場合は endpoint/ の各ファイルを書き換え
  *
  * ファイル名はイベント名の : を _ に置き換えたもの
  * match:standby  -> endpoint/match_standby.tsx
  *
- * イベントのエンドポイントを増やす場合は、
- * 上記のルールで endpoint/ にファイルを1つ作り、下記に1行追加
+ * イベントのエンドポイントを追加する場合は、
+ * 上記のルールで endpoint/ にファイルを1つ作成し、下記に1行追加
  */
 const socketScenario: Record<string, ScenarioHandler> = {
   'time:sync': timeSync,

@@ -12,13 +12,7 @@ type ErrorBoundaryState = {
   hasError: boolean;
 };
 
-/**
- * 想定外の例外で画面全体が真っ白になるのを防ぐ最後の砦。
- *
- * Reactは描画中に例外が投げられるとツリーごとアンマウントするため、
- * 受け止める側が無いと何も表示されない状態になる。
- * エラー境界はクラスコンポーネントでしか実装できないため、ここだけクラスで書く
- */
+// 予期せぬエラーで画面が真っ白になるのを防ぐ
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 
@@ -30,7 +24,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     console.error('画面の描画中にエラーが発生しました。', error, errorInfo);
   }
 
-  // 壊れた状態のまま部分的に復帰させると原因が追いにくくなるため、ホームから読み込み直す
   handleGoToHome = () => {
     window.location.assign('/');
   };

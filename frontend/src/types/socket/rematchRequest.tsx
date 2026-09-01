@@ -1,4 +1,4 @@
-// rematch:anyRequest イベントのペイロード（再対戦希望の有無をクライアントから送る）
+// rematch:anyRequest イベントのペイロード
 type RematchRequest = {
   isHopeRematch: boolean;
 };

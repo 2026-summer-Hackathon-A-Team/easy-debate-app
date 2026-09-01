@@ -12,36 +12,34 @@ import {
   userInfoAtom,
 } from '../stores/userAtom';
 
-// ログインしていなくてもアクセスできるページ
+// ログインしていなくてもアクセス可能なページ
 const publicPaths = ['/signin', '/signup'];
 
 function AuthWrapper() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ログイン状態: 'unchecked'(未確認) | 'loggedIn' | 'loggedOut'
+  // 現在のログイン状況
   const [loginStatus, setLoginStatus] = useAtom(loginStatusAtom);
 
-  // ログインユーザーの情報(未取得の間は null)
+  // ユーザー情報
   const [userInfo, setUserInfo] = useAtom(userInfoAtom);
 
   const store = useStore();
 
-  // 現在のパスが「未ログインでも見られるページ」かどうか
+  // 現在のパスがログインしていなくてもアクセス可能なページかどうか判定
   const isPublicPage = publicPaths.includes(location.pathname);
 
-  // 1. マウント時に一度だけセッションの有無をサーバーに確認し、loginStatusを確定させる
+  // 初期表示時に一度だけログイン状況をサーバーに確認
   useEffect(() => {
     if (loginStatus !== 'unchecked') {
       return;
     }
 
-    // 既に誰かが呼び出し中なら、後から来たこちらは呼び出さない
+    // 2重呼び出し防止
     if (store.get(isCheckingSessionAtom)) {
       return;
     }
-
-    // 先に呼び出す側としてフラグを立てる
     store.set(isCheckingSessionAtom, true);
 
     async function fetchLoginStatus() {
@@ -59,18 +57,16 @@ function AuthWrapper() {
     fetchLoginStatus();
   }, [loginStatus, setLoginStatus, navigate, store]);
 
-  // 2. ログイン済みと分かったら、続けてユーザー情報を取得する
+  // ログイン済みの場合、続けてユーザー情報を取得
   useEffect(() => {
     if (loginStatus !== 'loggedIn' || isPublicPage || userInfo !== null) {
       return;
     }
 
-    // 既に誰かが呼び出し中なら、後から来たこちらは呼び出さない
+    // 2重呼び出し防止
     if (store.get(isFetchingUserInfoAtom)) {
       return;
     }
-
-    // 先に呼び出す側としてフラグを立てる
     store.set(isFetchingUserInfoAtom, true);
 
     async function fetchUserInfo() {
@@ -79,13 +75,11 @@ function AuthWrapper() {
 
         setUserInfo(data);
       } catch (error) {
-        // 401(未認証)ならセッションが無効なので、関連するstoreを全て初期化しつつログインチェックからやり直す
         if (error instanceof ApiError && error.status === 401) {
           window.location.replace('/signin');
           return;
         }
 
-        // それ以外のエラーは想定外のためエラーページへ(ログインチェックも未確認に戻す)
         setLoginStatus('unchecked');
         navigate('/500');
       } finally {
@@ -104,27 +98,27 @@ function AuthWrapper() {
     store,
   ]);
 
-  // ログイン状態がまだ確認できていない間は何も描画しない(画面のちらつき防止)
+  // ログイン状況が確認できていない場合は何も表示しない
   if (loginStatus === 'unchecked') {
     return null;
   }
 
-  // ログイン済みなのにサインイン/サインアップ等のページにいる場合はホームへ
+  // ログイン済みなのにゲスト向けの画面にいる場合はホームへ
   if (loginStatus === 'loggedIn' && isPublicPage) {
     return <Navigate to="/" replace />;
   }
 
-  // 未ログインなのに保護されたページにいる場合はサインインへ
+  // 未ログインなのに会員向けの画面にいる場合はサインインへ
   if (loginStatus === 'loggedOut' && !isPublicPage) {
     return <Navigate to="/signin" replace />;
   }
 
-  // ログイン済みだがユーザー情報の取得がまだ終わっていない間は何も描画しない
+  // ログイン済みだがユーザー情報の取得がまだ終わっていない場合は何も表示しない
   if (loginStatus === 'loggedIn' && userInfo === null) {
     return null;
   }
 
-  // 認証チェックを通過したら、実際のページを描画する
+  // 認証チェックを通過したら、実際のページを表示
   return <Outlet />;
 }
 

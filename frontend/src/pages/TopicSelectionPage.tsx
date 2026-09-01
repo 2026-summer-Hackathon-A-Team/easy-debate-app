@@ -11,7 +11,7 @@ import type { MatchComplete } from '../types/socket/matchComplete';
 import type { TopicChangeRequest } from '../types/socket/topicChangeRequest';
 import type { TopicChangeResult } from '../types/socket/topicChangeResult';
 
-// カウントダウン終了・相手離脱を検知した際に表示するモーダル。
+// 「カウントダウン終了 or 相手離脱」を検知した際に表示するモーダル
 // opponentLeaveは「相手が離脱した」「相手が期限内に回答しなかった」の2パターン
 type Outcome =
   | { type: 'opponentLeave'; reason: 'leave' | 'idle' }
@@ -23,31 +23,24 @@ function TopicSelectionPage() {
   const navigate = useNavigate();
   const navigationType = useNavigationType();
 
-  // MatchingPage(match:complete)またはSocketManager(sync:result)からnavigateのstateで渡ってくる値。
-  // 画面リロード時・直接URLアクセス時はまだstateが無いため、SocketManagerがsync:resultを
-  // 受け取って改めてnavigateしてくるまで何も描画しない。
-  // isAnsweredはSocketManager(sync:result)経由の場合のみ含まれ、リロード時に
-  // 回答済み状態を復元して二重回答を防ぐために使う
+  // navigateで遷移してきた際のstate
   const state = location.state as
     (MatchComplete & { isAnswered?: boolean }) | null;
 
-  // 回答期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  // 回答期限までの残り秒数
   const remainingSeconds = useCountdownTimer(
     state?.answerDeadline ?? new Date(0).toISOString(),
   );
 
-  // お題チェンジ希望を回答済みか(ボタンを押したら再度押せなくする)
+  // お題チェンジ希望を回答済みか
   const [isAnswered, setIsAnswered] = useState(
     () => state?.isAnswered ?? false,
   );
+
   // 相手がdisconnectから20秒以内に復帰しなかったか
   const [isOpponentLeft, setIsOpponentLeft] = useState(false);
 
-  // 回答期限が0になったか。
-  // ブラウザバック・リロード(POP)で表示している間のstateは履歴から復元された当時の値で、
-  // answerDeadlineが既に過ぎている。これを本物の期限切れとして扱うとsocketを切ってしまい、
-  // sync:resultで正しい画面へ戻れなくなるため、POPの間は期限切れとみなさない
-  // (SocketManagerがsync:resultで改めてnavigateすると、この判定は自動的に有効に戻る)
+  // 回答期限がカウントダウン0か
   const isTimeUp = navigationType !== 'POP' && remainingSeconds <= 0;
 
   // 両者の回答が揃った場合と、相手が離脱した場合を監視する
@@ -71,15 +64,16 @@ function TopicSelectionPage() {
     };
   }, [navigate]);
 
-  // 期限切れになった瞬間に一度だけSocketを破棄する
+  // 期限切れになったらSocketを破棄
   useEffect(() => {
     if (isTimeUp) {
       socket.disconnect();
     }
   }, [isTimeUp]);
 
-  // 期限切れ時、自分が回答済みなら「相手が期限内に回答しなかった」
-  // 未回答なら「自分の時間切れ」
+  // 期限切れ時、
+  // 自分が回答済み ---> 「相手が期限内に回答しなかった」
+  // 自分が未回答 ---> 「自分の時間切れ」
   const outcome: Outcome = isOpponentLeft
     ? { type: 'opponentLeave', reason: 'leave' }
     : isTimeUp
@@ -88,6 +82,11 @@ function TopicSelectionPage() {
         : { type: 'timeUp' }
       : null;
 
+  /**
+   * お題チェンジ希望を回答
+   *
+   * @param isHopeChangeTopic お題チェンジ希望有無
+   */
   function handleAnswer(isHopeChangeTopic: boolean) {
     const payload: TopicChangeRequest = { isHopeChangeTopic };
 
@@ -95,15 +94,21 @@ function TopicSelectionPage() {
     setIsAnswered(true);
   }
 
+  /**
+   * マッチング待ち画面へ遷移
+   */
   function handleGoToMatching() {
     navigate('/debates/matching');
   }
 
+  /**
+   * ホーム画面へ遷移
+   */
   function handleGoToHome() {
     navigate('/');
   }
 
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  // navigateしてくるまで何も描画しない
   if (!state) {
     return null;
   }

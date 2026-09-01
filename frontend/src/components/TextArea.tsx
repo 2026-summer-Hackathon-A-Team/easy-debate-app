@@ -22,26 +22,24 @@ function TextArea({
       return;
     }
 
-    // 一度高さをautoに戻してからscrollHeightを測る
-    // (そうしないと行を減らしたときに縮まらない)
     textArea.style.height = 'auto';
 
     const style = getComputedStyle(textArea);
-    // scrollHeightはborderを含まないので、border-boxならその分を足さないと
-    // 常に数px足りずスクロールバーが出てしまう
+
     const borderHeight =
       style.boxSizing === 'border-box'
         ? parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
         : 0;
     const contentHeight = textArea.scrollHeight + borderHeight;
-    // max-heightが指定されていればそこで頭打ちにする
+
     const maxHeight = parseFloat(style.maxHeight);
     const nextHeight = Number.isNaN(maxHeight)
       ? contentHeight
       : Math.min(contentHeight, maxHeight);
 
     textArea.style.height = `${nextHeight}px`;
-    // 上限に達したときだけスクロールできるようにする
+
+    // 上限に達したときだけスクロールできるように
     textArea.style.overflowY = contentHeight > nextHeight ? 'auto' : 'hidden';
   }, [autoResize, value]);
 
