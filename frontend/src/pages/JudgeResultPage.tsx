@@ -17,19 +17,19 @@ import type { ThanksReceive } from '../types/socket/thanksReceive';
 import type { RematchRequest } from '../types/socket/rematchRequest';
 import type { RematchResult } from '../types/socket/rematchResult';
 
-// お礼メッセージは自分の送信分がこの通数に達すると送れなくなる
+// お礼メッセージの送信上限
 const THANKS_LIMIT = 5;
 
 type ResultTheme = {
   // 見出し・レート増減などの文字色
   text: string;
-  // 残り時間バッジ(淡い背景 + 濃い文字)
+  // 残り時間バッジ（淡い背景 + 濃い文字）
   badge: string;
   // 塗りつぶしボタン
   solid: string;
   // 自分のお礼吹き出し
   bubble: string;
-  // 固定お礼メッセージボタンのホバー時の枠線
+  // 固定お礼メッセージボタンのhover時の枠線
   hoverBorder: string;
 };
 
@@ -65,12 +65,10 @@ function JudgeResultPage() {
   const userInfo = useAtomValue(userInfoAtom);
   const store = useStore();
 
-  // DebatePage(judge:result)またはSocketManager(sync:result)からnavigateのstateで
-  // 渡ってくる値。画面リロード時・直接URLアクセス時はまだstateが無いため、
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  // navigateのstateで渡ってくる値
   const state = location.state as JudgeResultPageState | null;
 
-  // 判定確認期限までの残り秒数(stateが届くまでは既に期限切れの日時を渡してタイマーを動かさない)
+  // 判定確認期限までの残り秒数
   const remainingSeconds = useCountdownTimer(
     state?.judgeConfirmDeadline ?? new Date(0).toISOString(),
   );
@@ -78,27 +76,28 @@ function JudgeResultPage() {
   const [thanksHistory, setThanksHistory] = useState<ThanksHistoryItem[]>(
     state?.thanksHistory ?? [],
   );
+
+  // お礼チャット（入力中）
   const [thanksInput, setThanksInput] = useState('');
-  // isThanksDoneはリロード時に「既にお礼を終えていたか」を復元するための値
+
+  // お礼フェーズが済んでいるか
   const [isThanksCollapsed, setIsThanksCollapsed] = useState(
     state?.isThanksDone ?? false,
   );
-  // SocketManager(sync:result)経由でリロードした場合のみ、お礼でのモラル違反
-  // (isMoralViolationOfThanks)を検知済みの可能性があるため、自分が違反者なら
-  // 警告モーダルを復元する。judge:resultイベント自体にはisMoralViolationOfThanksが
-  // 含まれないため(violationはJudgeResultViolation型)、ここだけ別途安全にキャストして読む
+
+  // モラル違反内容
   const initialViolation = state?.violation as
     | { isMoralViolationOfThanks?: boolean; violationUserId?: number }
     | undefined;
 
+  // お礼のモラル違反モーダル表示可否
   const [showThanksViolationModal, setShowThanksViolationModal] = useState(
     () =>
       !!initialViolation?.isMoralViolationOfThanks &&
       initialViolation.violationUserId === userInfo?.userId,
   );
 
-  // isRematchAnswered/isRematchResultはリロード時に「既に再対戦の希望を回答済みか」
-  // 「回答済みなら結果はもう分かっているか」を復元するための値
+  // 再対戦の希望を回答済みか
   const [rematchStatus, setRematchStatus] = useState<RematchStatus>(() => {
     if (state?.isRematchResult === false) {
       return 'declined';
@@ -107,11 +106,10 @@ function JudgeResultPage() {
     return state?.isRematchAnswered ? 'waiting' : 'idle';
   });
 
-  // タイムアウトによる自動遷移と、他の操作による遷移が二重に走らないようにするガード。
-  // 既に再対戦を回答済み(=何らかの操作が完了済み)ならリロード後も引き継ぐ
+  // 複数操作の2重実行防止
   const hasActedRef = useRef(state?.isRematchAnswered ?? false);
 
-  // 判定確認期限が切れたら、再対戦を希望しない扱いでホームへ戻る
+  // 判定確認期限が切れたら、再対戦を希望しない扱いでホームへ
   const isTimeUp = state !== null && remainingSeconds <= 0;
 
   useEffect(() => {
@@ -154,8 +152,7 @@ function JudgeResultPage() {
       socket.off('thanks:moralViolation', handleThanksMoralViolation);
       socket.off('rematch:anyResult', handleRematchResult);
     };
-    // navigateは依存に含めない(socketManager.tsxと同じ理由: pathnameが変わるたびに
-    // 参照が作り直され、このeffectが不要に再実行されてしまうため)
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -167,6 +164,7 @@ function JudgeResultPage() {
       socket.emit('rematch:anyRequest', payload);
       navigate('/');
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimeUp]);
 
@@ -195,7 +193,12 @@ function JudgeResultPage() {
   ).length;
   const isThanksLimitReached = myThanksCount >= THANKS_LIMIT;
 
-  // 固定メッセージは改ざん防止のためID(fixedThanksId)を送る(本文は送らない)
+  /**
+   * 固定お礼メッセージ送信
+   *
+   * @param fixedThanksId 固定お礼ID
+   * @returns void
+   */
   function sendFixedThanks(fixedThanksId: number) {
     if (isThanksLimitReached) {
       return;
@@ -206,6 +209,12 @@ function JudgeResultPage() {
     socket.emit('thanks:send', payload);
   }
 
+  /**
+   * フリーお礼メッセージ送信
+   *
+   * @param freeThanksMsg フリーお礼メッセージ
+   * @returns void
+   */
   function sendFreeThanks(freeThanksMsg: string) {
     if (freeThanksMsg === '' || isThanksLimitReached) {
       return;
@@ -217,6 +226,12 @@ function JudgeResultPage() {
     setThanksInput('');
   }
 
+  /**
+   * 再対戦希望を送信
+   *
+   * @param isHopeRematch 再対戦希望
+   * @returns void
+   */
   function handleRematchChoice(isHopeRematch: boolean) {
     if (rematchStatus !== 'idle') {
       return;
@@ -228,12 +243,15 @@ function JudgeResultPage() {
     setRematchStatus('waiting');
   }
 
+  /**
+   * ホームへ遷移
+   */
   function handleGoHome() {
     hasActedRef.current = true;
     navigate('/');
   }
 
-  // SocketManagerがsync:resultを受け取って改めてnavigateしてくるまで何も描画しない
+  // navigateされるまで何も描画しない
   if (!state) {
     return null;
   }
@@ -244,7 +262,7 @@ function JudgeResultPage() {
 
   const theme = me.isWinner ? WINNER_THEME : LOSER_THEME;
 
-  // 対戦中の違反・不戦敗の場合はお礼・再対戦の受付を行わない
+  // 「対戦中の違反や不戦敗」の場合はお礼, 再対戦の受付を行わない
   const isForfeit =
     state.violation.isMoralViolationOfBattle ||
     state.violation.is2NoChat ||

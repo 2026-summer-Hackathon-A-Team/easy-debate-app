@@ -1,4 +1,4 @@
-// debate:chatSend イベントのペイロード（チャット送信時にクライアントから送る）
+// debate:chatSend イベントのペイロード
 type DebateChatSend = {
   chatMsg: string;
 };

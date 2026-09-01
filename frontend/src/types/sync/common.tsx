@@ -1,5 +1,4 @@
-// sync:result の各フェーズ共通で使い回すサブタイプ置き場。
-// フェーズごとの形はsyncResult.tsxで定義する
+// sync:result の各フェーズ共通で使用する型
 
 type Phase =
   | 'MATCHING'

@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 
-// Enterキー挙動制御のためにキーボードからデバイスを判定
+// Enterキー押下時の制御のためキーボードからデバイスを判定
 const isTouchDevice = window.matchMedia(
   '(hover: none) and (pointer: coarse)',
 ).matches;

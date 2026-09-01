@@ -1,5 +1,4 @@
-// sync:result イベントを定義するファイル。
-// 各フェーズで共有するサブタイプはcommon.tsxを参照する
+// sync:result イベント定義の型
 
 import type {
   ChatHistoryItem,

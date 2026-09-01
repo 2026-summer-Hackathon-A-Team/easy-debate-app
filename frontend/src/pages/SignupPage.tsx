@@ -26,6 +26,9 @@ function SignupPage() {
   const isPasswordValid = passwordSchema.safeParse(password).success;
   const canSubmit = isUserNameValid && isPasswordValid && !isSubmitting;
 
+  /**
+   * 新規登録
+   */
   async function handleSubmit() {
     if (!canSubmit) {
       return;
@@ -37,12 +40,12 @@ function SignupPage() {
       await registerUser({ userName, password });
       setModal('success');
     } catch (error) {
-      //ユーザー名重複
+      // ユーザー名重複
       if (error instanceof ApiError && error.status === 409) {
         setErrorMessage(error.message);
         setModal('duplicateError');
       }
-      //バリデーションNG
+      // バリデーションNG
       else if (error instanceof ApiError && error.status === 400) {
         setErrorMessage(error.message);
         setModal('validationError');
@@ -54,6 +57,9 @@ function SignupPage() {
     }
   }
 
+  /**
+   * ログイン画面へ遷移
+   */
   function handleGoToSignin() {
     navigate('/signin', { state: { userName } });
   }

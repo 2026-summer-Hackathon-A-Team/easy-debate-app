@@ -7,13 +7,12 @@ import ErrorBoundary from './components/ErrorBoundary.tsx';
 import MainLayout from './Layouts/MainLayout.tsx';
 import { setupMock } from './mocks';
 
-// モック有効時のみ、コンソールに案内を表示（本番ビルドでは何もしない）
+// モック有効時のみ、コンソールに案内を表示（本番では何もしない）
 setupMock();
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
     <MainLayout>
-      {/* 画面側で拾いきれなかった例外を受け止める(ヘッダーは残したいのでMainLayoutの内側) */}
       <ErrorBoundary>
         <App />
       </ErrorBoundary>

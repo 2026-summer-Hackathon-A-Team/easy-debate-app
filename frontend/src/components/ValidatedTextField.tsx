@@ -5,14 +5,13 @@ import TextField, { type TextFieldProps } from './TextField';
 type ValidatedTextFieldProps = TextFieldProps & {
   id: string;
   label: string;
-  // 入力欄の下に表示するNGメッセージ。未指定/空文字の場合は表示しない
+  // 入力欄の下に表示するNGメッセージ
   errorMessage?: string;
-  // ラベル(外側のlabel要素)に付与するclassName
+  // ラベル（外側のlabel要素）に付与するclass名
   wrapperClassName?: string;
 };
 
-// ラベル+入力欄+バリデーションNGメッセージをまとめたフォーム部品。
-// 有効/無効の判定自体は呼び出し元(各schema)が行い、結果のメッセージだけを受け取る
+// ラベル, 入力欄, バリデーションNGメッセージをまとめたフォーム部品
 function ValidatedTextField({
   id,
   label,

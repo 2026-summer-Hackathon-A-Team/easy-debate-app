@@ -12,9 +12,12 @@ function MatchingPage() {
   const navigationType = useNavigationType();
 
   useEffect(() => {
-    // match:standbyは1マウントにつき1回だけ送る
+    // match:standbyを初期表示につき1度しか送らないように
     let isStandbyRequested = false;
 
+    /**
+     * マッチング待機列へ並ぶ
+     */
     function requestStandby() {
       if (isStandbyRequested) {
         return;
@@ -24,19 +27,28 @@ function MatchingPage() {
       socket.emit('match:standby');
     }
 
+    /**
+     * マッチング完了時の疎通（離脱していないか）確認
+     */
     function handleMatchFound() {
       socket.emit('match:isConfirm');
     }
 
-    // 両者がマッチングを確認できたら、仮のお題と回答期限を渡してお題選定画面へ遷移する。
-    // カウントダウンの開始は遷移先で初期処理で行う
+    /**
+     * 両者がマッチング確認済みとなったらお題選定画面へ遷移
+     *
+     * @param data ペイロード
+     */
     function handleMatchComplete(data: MatchComplete) {
       navigate('/debates/topic-selection', { state: data });
     }
 
-    // ブラウザバック・リロードでこの画面に来た場合は、まだディベート中の可能性がある。
-    // その状態のmatch:standbyはサーバー側でphase不一致として弾かれるため、
-    // sync:resultでMATCHING(=どのディベートにも参加していない)と分かってから依頼する
+    /**
+     * 現在のデータを同期
+     * （ここではマッチング待機列へ並ぶために使用）
+     *
+     * @param data ペイロード
+     */
     function handleSyncResult(data: SyncResult) {
       if (data.phase === 'MATCHING') {
         requestStandby();
@@ -47,9 +59,7 @@ function MatchingPage() {
     socket.on('match:complete', handleMatchComplete);
     socket.on('sync:result', handleSyncResult);
 
-    // 自分の操作でこの画面へ来た場合(POP以外)は、ディベート中でないことが分かっているので
-    // sync:resultを待たずに依頼する。Socketの接続はSocketManagerが行うため、
-    // 未接続の間は送信バッファに積まれ、接続完了後にまとめて送られる
+    // ユーザー操作でこの画面へ遷移してきた場合はsync:resultを待たずに依頼
     if (navigationType !== 'POP') {
       requestStandby();
     }
