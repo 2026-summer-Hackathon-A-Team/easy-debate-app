@@ -15,6 +15,22 @@ type ErrorResponseBody = {
   errorMsg?: string;
 };
 
+// ユーザー名変更リクエストボディ
+type UpdateUserNameRequest = {
+  userName: string;
+};
+
+// ユーザー名変更レスポンス(200)
+type UpdateUserNameResponse = {
+  userName: string;
+};
+
+// パスワード変更リクエストボディ
+type UpdatePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 // 新規ユーザー登録
 async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
   const response = await client.api.v1.users.$post({
@@ -54,4 +70,4 @@ async function getUserInfo(): Promise<UserInfo> {
   throw new ApiError(response.status, 'ユーザー情報の取得に失敗しました');
 }
 
-export { registerUser, getUserInfo };
+): Promise<UpdateUserNameResponse> {
