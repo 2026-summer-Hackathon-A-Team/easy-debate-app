@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { argon2PasswordHash } from '../lib/password.js';
 import { zValidator } from '@hono/zod-validator';
-import { registerUserBodySchema } from '../lib/zod.schemas.js';
+import {
+  registerUserBodySchema,
+  updateUserNameBodySchema,
+} from '../lib/zod.schemas.js';
 import { prisma } from '../lib/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { DELETE_MARKER_ACTIVE, PRISMA_ERROR_CODE } from '../lib/constants.js';
@@ -124,4 +127,51 @@ export const users = new Hono<UserEnv>()
       });
     }
     return c.body(null, 204);
-  });
+  })
+
+  /**
+   * ユーザー名変更API
+   * PATCH /api/v1/users/me
+   */
+  .patch(
+    '/me',
+    zValidator('json', updateUserNameBodySchema, (result, _c) => {
+      if (!result.success) {
+        throw new HTTPException(400, {
+          message: '入力内容に誤りがあります。',
+        });
+      }
+    }),
+    async (c) => {
+      const userId = c.get('userId');
+
+      const { userName: newUserName } = c.req.valid('json');
+      try {
+        await prisma.user.update({
+          where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+          data: { userName: newUserName },
+        });
+      } catch (e) {
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === PRISMA_ERROR_CODE.UNIQUE_CONSTRAINT_FAILED
+        ) {
+          // ユーザー名が重複した場合、409エラー
+          throw new HTTPException(409, {
+            message: 'そのユーザー名は既に使用されています。',
+          });
+        }
+        // 他のエラーは500エラーへ
+        throw e;
+      }
+
+      c.header('Cache-Control', 'no-store');
+      return c.json(
+        {
+          userName: newUserName,
+        },
+        200,
+      );
+    },
+  )
+
