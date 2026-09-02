@@ -80,12 +80,10 @@ async function updateUserName(
     return (await response.json()) as UpdateUserNameResponse;
   }
 
-  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
   if (response.status === 401) {
     throw new ApiError(response.status, 'UNAUTHORIZED');
   }
 
-  // 400(入力値NG)/409(ユーザー名重複): 呼び出し元がモーダルを出し分けるためのエラー
   if (response.status === 400 || response.status === 409) {
     const body = (await response.json()) as ErrorResponseBody;
 
@@ -98,7 +96,7 @@ async function updateUserName(
   throw new ApiError(response.status, 'ユーザー名の変更に失敗しました');
 }
 
-// ログイン中のユーザーのパスワードを変更する。成功時はレスポンスボディ無し
+// パスワード変更
 async function updatePassword(data: UpdatePasswordRequest): Promise<void> {
   const response = await client.api.v1.users.me.password.$put({
     json: data,
@@ -108,12 +106,10 @@ async function updatePassword(data: UpdatePasswordRequest): Promise<void> {
     return;
   }
 
-  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
   if (response.status === 401) {
     throw new ApiError(response.status, 'UNAUTHORIZED');
   }
 
-  // 400(入力値NG)/422(現在のパスワード誤り): 呼び出し元がモーダルを出し分けるためのエラー
   if (response.status === 400 || response.status === 422) {
     const body = (await response.json()) as ErrorResponseBody;
 
@@ -126,17 +122,12 @@ async function updatePassword(data: UpdatePasswordRequest): Promise<void> {
   throw new ApiError(response.status, 'パスワードの変更に失敗しました');
 }
 
-// ログイン中のユーザーを退会させる。成功時はレスポンスボディ無し
+// 退会処理
 async function cancelMembership(): Promise<void> {
   const response = await client.api.v1.users.me.$delete();
 
   if (response.status === 204) {
     return;
-  }
-
-  // 401(未認証): セッション切れなどで呼び出し元がログアウト扱いに切り替えるためのエラー
-  if (response.status === 401) {
-    throw new ApiError(response.status, 'UNAUTHORIZED');
   }
 
   throw new ApiError(response.status, '退会処理に失敗しました');

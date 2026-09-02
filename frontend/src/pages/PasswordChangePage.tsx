@@ -10,7 +10,11 @@ import { updatePassword } from '../api/userApi';
 import { passwordSchema } from '../validation/userSchemas';
 
 type ModalState =
-  'success' | 'newPasswordInvalidError' | 'incorrectPasswordError' | null;
+  | 'success'
+  | 'newPasswordInvalidError'
+  | 'incorrectPasswordError'
+  | 'unauthorizedError'
+  | null;
 
 function PasswordChangePage() {
   const navigate = useNavigate();
@@ -30,7 +34,8 @@ function PasswordChangePage() {
   const canSubmit =
     isCurrentPasswordValid &&
     isNewPasswordValid &&
-    newPassword === newPasswordConfirm &&
+    newPasswordConfirm !== '' &&
+    !isMismatch &&
     !isSubmitting;
 
   async function handleSubmit() {
@@ -53,10 +58,8 @@ function PasswordChangePage() {
       else if (error instanceof ApiError && error.status === 400) {
         setErrorMessage(error.message);
         setModal('newPasswordInvalidError');
-      }
-      // 401: storeを初期化したいので、window.location.replaceを使う
-      else if (error instanceof ApiError && error.status === 401) {
-        window.location.replace('/signin');
+      } else if (error instanceof ApiError && error.status === 401) {
+        setModal('unauthorizedError');
       } else {
         navigate('/500');
       }
@@ -166,6 +169,21 @@ function PasswordChangePage() {
           <Heading level={2}>パスワードを変更しました</Heading>
           <Button className="mt-5 w-full" onClick={() => navigate('/profile')}>
             プロフィールへ戻る
+          </Button>
+        </Modal>
+      )}
+
+      {modal === 'unauthorizedError' && (
+        <Modal>
+          <Heading level={2}>パスワードの変更に失敗しました</Heading>
+          <p className="mt-2 text-[13.5px] text-[#8a8f89] leading-relaxed">
+            再度、ログインしてください
+          </p>
+          <Button
+            className="mt-5 w-full"
+            onClick={() => window.location.replace('/signin')}
+          >
+            OK
           </Button>
         </Modal>
       )}

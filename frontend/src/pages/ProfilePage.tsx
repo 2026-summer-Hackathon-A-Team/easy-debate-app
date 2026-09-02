@@ -5,6 +5,7 @@ import { useAtomValue } from 'jotai';
 import Heading from '../components/Heading';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import ApiError from '../api/apiError';
 import { cancelMembership } from '../api/userApi';
 import { userInfoAtom } from '../stores/userAtom';
 
@@ -13,6 +14,7 @@ function ProfilePage() {
   const userInfo = useAtomValue(userInfoAtom);
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showWithdrawErrorModal, setShowWithdrawErrorModal] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   async function handleWithdraw() {
@@ -20,11 +22,19 @@ function ProfilePage() {
 
     try {
       await cancelMembership();
-    } catch {
-      // 呼び出し結果が成功でも失敗でもログイン画面へ遷移するため、ここではエラーを握りつぶす
-    } finally {
       // storeを初期化したいので、window.location.replaceを使う
       window.location.replace('/signin');
+    } catch (error) {
+      // 401: storeを初期化したいので、window.location.replaceを使う
+      if (error instanceof ApiError && error.status === 401) {
+        window.location.replace('/signin');
+      } else {
+        // 失敗モーダルを挟んでからログイン画面へ遷移する
+        setShowWithdrawModal(false);
+        setShowWithdrawErrorModal(true);
+      }
+    } finally {
+      setIsWithdrawing(false);
     }
   }
 
@@ -111,6 +121,21 @@ function ProfilePage() {
               退会する
             </Button>
           </div>
+        </Modal>
+      )}
+
+      {showWithdrawErrorModal && (
+        <Modal>
+          <Heading level={2}>退会に失敗しました</Heading>
+          <p className="mt-2 text-[13.5px] text-[#8a8f89] leading-relaxed">
+            再度お試しください。
+          </p>
+          <Button
+            className="mt-5 w-full"
+            onClick={() => window.location.replace('/signin')}
+          >
+            OK
+          </Button>
         </Modal>
       )}
     </div>

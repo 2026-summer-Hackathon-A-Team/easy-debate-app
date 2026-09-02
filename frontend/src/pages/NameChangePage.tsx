@@ -11,7 +11,12 @@ import { updateUserName } from '../api/userApi';
 import { userInfoAtom } from '../stores/userAtom';
 import { userNameSchema } from '../validation/userSchemas';
 
-type ModalState = 'success' | 'validationError' | 'duplicateError' | null;
+type ModalState =
+  | 'success'
+  | 'validationError'
+  | 'duplicateError'
+  | 'unauthorizedError'
+  | null;
 
 function NameChangePage() {
   const navigate = useNavigate();
@@ -45,7 +50,7 @@ function NameChangePage() {
     } catch (error) {
 
       if (error instanceof ApiError && error.status === 401) {
-        window.location.replace('/signin');
+        setModal('unauthorizedError');
       }
       // ユーザー名重複
       else if (error instanceof ApiError && error.status === 409) {
@@ -140,6 +145,21 @@ function NameChangePage() {
           <Heading level={2}>ユーザー名を変更しました</Heading>
           <Button className="mt-5 w-full" onClick={() => navigate('/profile')}>
             プロフィールへ戻る
+          </Button>
+        </Modal>
+      )}
+
+      {modal === 'unauthorizedError' && (
+        <Modal>
+          <Heading level={2}>ユーザー名の変更に失敗しました</Heading>
+          <p className="mt-2 text-[13.5px] text-[#8a8f89] leading-relaxed">
+            再度、ログインしてください
+          </p>
+          <Button
+            className="mt-5 w-full"
+            onClick={() => window.location.replace('/signin')}
+          >
+            OK
           </Button>
         </Modal>
       )}
