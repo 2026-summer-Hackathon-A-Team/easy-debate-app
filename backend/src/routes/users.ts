@@ -99,28 +99,29 @@ export const users = new Hono<UserEnv>()
    */
   .delete('/me', async (c) => {
     const userId = c.get('userId');
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // ユーザーIDに対応するセッションIDを全て削除
       await tx.loginSession.deleteMany({
         where: { userId },
       });
       // 削除マーカー更新
-      const result = await tx.user.updateMany({
+      const updateResult = await tx.user.updateMany({
         where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
         data: { deleteMarker: userId, deletedAt: new Date() },
       });
-
-      // 削除マーカー更新件数0だった場合、404エラー
-      if (result.count === 0) {
-        throw new HTTPException(404, {
-          message: '対象のユーザーが見つかりません。',
-        });
-      }
+      return updateResult;
     });
 
     // CookieからsessionIdを削除
     deleteCookie(c, 'sessionId', {
       path: '/',
     });
+
+    // 削除マーカー更新件数0だった場合、404エラー
+    if (result.count === 0) {
+      throw new HTTPException(404, {
+        message: '対象のユーザーが見つかりません。',
+      });
+    }
     return c.body(null, 204);
   });
