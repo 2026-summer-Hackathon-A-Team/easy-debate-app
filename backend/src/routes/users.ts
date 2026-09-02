@@ -7,6 +7,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { DELETE_MARKER_ACTIVE, PRISMA_ERROR_CODE } from '../lib/constants.js';
 import { HTTPException } from 'hono/http-exception';
 import type { UserEnv } from '../authmiddleware.js';
+import { deleteCookie } from 'hono/cookie';
 
 export const users = new Hono<UserEnv>()
   /**
@@ -90,4 +91,37 @@ export const users = new Hono<UserEnv>()
       },
       200,
     );
+  })
+
+  /**
+   * ユーザー退会API
+   * DELETE /api/v1/users/me
+   */
+  .delete('/me', async (c) => {
+    const userId = c.get('userId');
+    const result = await prisma.$transaction(async (tx) => {
+      // ユーザーIDに対応するセッションIDを全て削除
+      await tx.loginSession.deleteMany({
+        where: { userId },
+      });
+      // 削除マーカー更新
+      const updateResult = await tx.user.updateMany({
+        where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+        data: { deleteMarker: userId, deletedAt: new Date() },
+      });
+      return updateResult;
+    });
+
+    // CookieからsessionIdを削除
+    deleteCookie(c, 'sessionId', {
+      path: '/',
+    });
+
+    // 削除マーカー更新件数0だった場合、404エラー
+    if (result.count === 0) {
+      throw new HTTPException(404, {
+        message: '対象のユーザーが見つかりません。',
+      });
+    }
+    return c.body(null, 204);
   });
