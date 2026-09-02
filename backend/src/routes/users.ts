@@ -152,16 +152,23 @@ export const users = new Hono<UserEnv>()
           data: { userName: newUserName },
         });
       } catch (e) {
-        if (
-          e instanceof Prisma.PrismaClientKnownRequestError &&
-          e.code === PRISMA_ERROR_CODE.UNIQUE_CONSTRAINT_FAILED
-        ) {
-          // ユーザー名が重複した場合、409エラー
+        // Prisma関連のエラー以外は、500
+        if (!(e instanceof Prisma.PrismaClientKnownRequestError)) {
+          throw e;
+        }
+        // ユーザー名重複なら409
+        if (e.code === PRISMA_ERROR_CODE.UNIQUE_CONSTRAINT_FAILED) {
           throw new HTTPException(409, {
             message: 'そのユーザー名は既に使用されています。',
           });
         }
-        // 他のエラーは500エラーへ
+        // 対象のレコードが存在しない場合、404
+        if (e.code === PRISMA_ERROR_CODE.RECORD_NOT_FOUND) {
+          throw new HTTPException(404, {
+            message: '対象のユーザーが見つかりません。',
+          });
+        }
+        // それ以外のエラーコードの場合はスロー
         throw e;
       }
 
@@ -173,5 +180,4 @@ export const users = new Hono<UserEnv>()
         200,
       );
     },
-  )
-
+  );
