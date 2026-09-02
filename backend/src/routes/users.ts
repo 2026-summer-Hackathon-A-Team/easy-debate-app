@@ -162,10 +162,10 @@ export const users = new Hono<UserEnv>()
             message: 'そのユーザー名は既に使用されています。',
           });
         }
-        // 対象のレコードが存在しない場合、404
+        // 対象のレコードが存在しない場合、401
         if (e.code === PRISMA_ERROR_CODE.RECORD_NOT_FOUND) {
-          throw new HTTPException(404, {
-            message: '対象のユーザーが見つかりません。',
+          throw new HTTPException(401, {
+            message: 'ログインしていません。',
           });
         }
         // それ以外のエラーコードの場合はスロー
