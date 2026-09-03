@@ -5,7 +5,6 @@ import { useAtomValue } from 'jotai';
 import Heading from '../components/Heading';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
-import ApiError from '../api/apiError';
 import { cancelMembership } from '../api/userApi';
 import { userInfoAtom } from '../stores/userAtom';
 
@@ -24,15 +23,10 @@ function ProfilePage() {
       await cancelMembership();
       // storeを初期化したいので、window.location.replaceを使う
       window.location.replace('/signin');
-    } catch (error) {
-      // 401: storeを初期化したいので、window.location.replaceを使う
-      if (error instanceof ApiError && error.status === 401) {
-        window.location.replace('/signin');
-      } else {
-        // 失敗モーダルを挟んでからログイン画面へ遷移する
-        setShowWithdrawModal(false);
-        setShowWithdrawErrorModal(true);
-      }
+    } catch {
+      // 失敗モーダルを挟んでからログイン画面へ遷移する
+      setShowWithdrawModal(false);
+      setShowWithdrawErrorModal(true);
     } finally {
       setIsWithdrawing(false);
     }

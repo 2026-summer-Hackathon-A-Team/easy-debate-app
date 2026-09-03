@@ -34,7 +34,6 @@ function PasswordChangePage() {
   const canSubmit =
     isCurrentPasswordValid &&
     isNewPasswordValid &&
-    newPasswordConfirm !== '' &&
     !isMismatch &&
     !isSubmitting;
 
