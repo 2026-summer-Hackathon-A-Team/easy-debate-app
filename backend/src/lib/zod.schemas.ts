@@ -33,11 +33,7 @@ export const updateUserNameBodySchema = z.object({
  * パスワード変更用スキーマ
  */
 export const updatePasswordBodySchema = z.object({
-  currentPassword: z
-    .string()
-    .min(8)
-    .max(64)
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/),
+  currentPassword: z.string().min(1).max(64),
   newPassword: z
     .string()
     .min(8)

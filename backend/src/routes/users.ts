@@ -208,7 +208,7 @@ export const users = new Hono<UserEnv>()
         select: { passwordHash: true },
       });
 
-      if (user === null) {
+      if (!user) {
         throw new HTTPException(401, { message: 'ログインしていません。' });
       }
       // リクエストの現在のパスワードとDB側パスワードハッシュ値を比較
@@ -226,10 +226,14 @@ export const users = new Hono<UserEnv>()
 
       // 新しいパスワードをハッシュ化
       const newPasswordHash = await argon2PasswordHash(newPassword);
-      await prisma.user.update({
-        where: { id: userId },
+      const result = await prisma.user.updateMany({
+        where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
         data: { passwordHash: newPasswordHash },
       });
+      // 更新件数0だった場合、401エラー
+      if (result.count === 0) {
+        throw new HTTPException(401, { message: 'ログインしていません。' });
+      }
 
       return c.body(null, 204);
     },
