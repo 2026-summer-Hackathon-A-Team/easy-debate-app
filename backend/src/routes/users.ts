@@ -226,13 +226,21 @@ export const users = new Hono<UserEnv>()
 
       // 新しいパスワードをハッシュ化
       const newPasswordHash = await argon2PasswordHash(newPassword);
-      const result = await prisma.user.updateMany({
-        where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
-        data: { passwordHash: newPasswordHash },
-      });
-      // 更新件数0だった場合、401エラー
-      if (result.count === 0) {
-        throw new HTTPException(401, { message: 'ログインしていません。' });
+      try {
+        await prisma.user.update({
+          where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+          data: { passwordHash: newPasswordHash },
+        });
+      } catch (e) {
+        // 対象レコードが存在しない場合、401
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === PRISMA_ERROR_CODE.RECORD_NOT_FOUND
+        ) {
+          throw new HTTPException(401, { message: 'ログインしていません。' });
+        }
+        // それ以外のエラーコードの場合はスロー
+        throw e;
       }
 
       return c.body(null, 204);
