@@ -89,5 +89,5 @@ const logObj = (err: Error, c: any) => {
  */
 export type AppType = ApplyGlobalResponse<
   typeof app,
-  Record<400 | 401 | 404 | 409 | 500, { json: { errorMsg: string } }>
+  Record<400 | 401 | 404 | 409 | 422 | 500, { json: { errorMsg: string } }>
 >;

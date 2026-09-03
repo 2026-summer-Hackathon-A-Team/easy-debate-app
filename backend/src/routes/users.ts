@@ -1,8 +1,12 @@
 import { Hono } from 'hono';
-import { argon2PasswordHash } from '../lib/password.js';
+import {
+  argon2PasswordHash,
+  verifyArgon2PasswordHash,
+} from '../lib/password.js';
 import { zValidator } from '@hono/zod-validator';
 import {
   registerUserBodySchema,
+  updatePasswordBodySchema,
   updateUserNameBodySchema,
 } from '../lib/zod.schemas.js';
 import { prisma } from '../lib/prisma.js';
@@ -179,5 +183,66 @@ export const users = new Hono<UserEnv>()
         },
         200,
       );
+    },
+  )
+
+  /**
+   * パスワード変更API
+   * PUT /api/v1/users/me/password
+   */
+  .put(
+    '/me/password',
+    zValidator('json', updatePasswordBodySchema, (result, _c) => {
+      if (!result.success) {
+        throw new HTTPException(400, {
+          message: '入力内容に誤りがあります。',
+        });
+      }
+    }),
+    async (c) => {
+      const userId = c.get('userId');
+      const { currentPassword, newPassword } = c.req.valid('json');
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+        select: { passwordHash: true },
+      });
+
+      if (!user) {
+        throw new HTTPException(401, { message: 'ログインしていません。' });
+      }
+      // リクエストの現在のパスワードとDB側パスワードハッシュ値を比較
+      const isPasswordValid = await verifyArgon2PasswordHash(
+        currentPassword,
+        user.passwordHash,
+      );
+
+      // 不一致であれば422エラー
+      if (!isPasswordValid) {
+        throw new HTTPException(422, {
+          message: '現在のパスワードが正しくありません。',
+        });
+      }
+
+      // 新しいパスワードをハッシュ化
+      const newPasswordHash = await argon2PasswordHash(newPassword);
+      try {
+        await prisma.user.update({
+          where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+          data: { passwordHash: newPasswordHash },
+        });
+      } catch (e) {
+        // 対象レコードが存在しない場合、401
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === PRISMA_ERROR_CODE.RECORD_NOT_FOUND
+        ) {
+          throw new HTTPException(401, { message: 'ログインしていません。' });
+        }
+        // それ以外のエラーコードの場合はスロー
+        throw e;
+      }
+
+      return c.body(null, 204);
     },
   );
