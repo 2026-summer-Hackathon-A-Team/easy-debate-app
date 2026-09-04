@@ -19,6 +19,29 @@ export const registerUserBodySchema = z.object({
 });
 
 /**
+ * ユーザー名変更用スキーマ
+ */
+export const updateUserNameBodySchema = z.object({
+  userName: z
+    .string()
+    .min(6)
+    .max(20)
+    .regex(/^[A-Za-z0-9]+$/),
+});
+
+/**
+ * パスワード変更用スキーマ
+ */
+export const updatePasswordBodySchema = z.object({
+  currentPassword: z.string().min(1).max(64),
+  newPassword: z
+    .string()
+    .min(8)
+    .max(64)
+    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/),
+});
+
+/**
  * ログイン用スキーマ
  * @remarks
  * 文字数のみ制限

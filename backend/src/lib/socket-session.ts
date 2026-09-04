@@ -1,8 +1,5 @@
 import { parseCookie } from 'cookie';
-/**
- * cookie内のsessionId名
- */
-const SESSION_COOKIE_NAME = 'sessionId';
+import { SESSION_COOKIE_NAME } from './cookie.js';
 
 /**
  * Socket用クッキー取得関数
