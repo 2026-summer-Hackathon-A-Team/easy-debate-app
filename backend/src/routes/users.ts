@@ -210,7 +210,7 @@ export const users = new Hono<UserEnv>()
         select: { passwordHash: true },
       });
 
-      if (user === null) {
+      if (!user) {
         throw new HTTPException(401, { message: 'ログインしていません。' });
       }
       // リクエストの現在のパスワードとDB側パスワードハッシュ値を比較
@@ -228,10 +228,22 @@ export const users = new Hono<UserEnv>()
 
       // 新しいパスワードをハッシュ化
       const newPasswordHash = await argon2PasswordHash(newPassword);
-      await prisma.user.update({
-        where: { id: userId },
-        data: { passwordHash: newPasswordHash },
-      });
+      try {
+        await prisma.user.update({
+          where: { id: userId, deleteMarker: DELETE_MARKER_ACTIVE },
+          data: { passwordHash: newPasswordHash },
+        });
+      } catch (e) {
+        // 対象レコードが存在しない場合、401
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === PRISMA_ERROR_CODE.RECORD_NOT_FOUND
+        ) {
+          throw new HTTPException(401, { message: 'ログインしていません。' });
+        }
+        // それ以外のエラーコードの場合はスロー
+        throw e;
+      }
 
       return c.body(null, 204);
     },
