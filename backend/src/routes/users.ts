@@ -15,6 +15,10 @@ import { DELETE_MARKER_ACTIVE, PRISMA_ERROR_CODE } from '../lib/constants.js';
 import { HTTPException } from 'hono/http-exception';
 import type { UserEnv } from '../authmiddleware.js';
 import { deleteCookie } from 'hono/cookie';
+import {
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+} from '../lib/cookie.js';
 
 export const users = new Hono<UserEnv>()
   /**
@@ -120,9 +124,7 @@ export const users = new Hono<UserEnv>()
     });
 
     // CookieからsessionIdを削除
-    deleteCookie(c, 'sessionId', {
-      path: '/',
-    });
+    deleteCookie(c, SESSION_COOKIE_NAME, sessionCookieOptions);
 
     // 削除マーカー更新件数0だった場合、404エラー
     if (result.count === 0) {

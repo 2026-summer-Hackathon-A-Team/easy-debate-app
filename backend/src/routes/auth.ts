@@ -12,6 +12,10 @@ import {
 } from '../lib/constants.js';
 import { verifyArgon2PasswordHash } from '../lib/password.js';
 import { createSessionId, hashSessionId } from '../lib/session.js';
+import {
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+} from '../lib/cookie.js';
 import type { UserEnv } from '../authmiddleware.js';
 
 export const auth = new Hono<UserEnv>()
@@ -67,12 +71,7 @@ export const auth = new Hono<UserEnv>()
         },
       });
 
-      setCookie(c, 'sessionId', sessionId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None',
-        path: '/',
-      });
+      setCookie(c, SESSION_COOKIE_NAME, sessionId, sessionCookieOptions);
       return c.body(null, 204);
     },
   )
@@ -110,12 +109,7 @@ export const auth = new Hono<UserEnv>()
     }
 
     // 新しいsessionIdをCookieに設定
-    setCookie(c, 'sessionId', newSessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'None',
-      path: '/',
-    });
+    setCookie(c, SESSION_COOKIE_NAME, newSessionId, sessionCookieOptions);
     c.header('Cache-Control', 'no-store');
     return c.body(null, 204);
   })
@@ -144,9 +138,7 @@ export const auth = new Hono<UserEnv>()
       throw e;
     }
     // CookieからsessionIdを削除
-    deleteCookie(c, 'sessionId', {
-      path: '/',
-    });
+    deleteCookie(c, SESSION_COOKIE_NAME, sessionCookieOptions);
     c.header('Cache-Control', 'no-store');
     return c.body(null, 204);
   });

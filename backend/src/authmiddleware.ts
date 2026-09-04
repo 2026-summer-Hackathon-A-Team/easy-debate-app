@@ -3,6 +3,7 @@ import { getCookie } from 'hono/cookie';
 import { HTTPException } from 'hono/http-exception';
 import { prisma } from './lib/prisma.js';
 import { hashSessionId } from './lib/session.js';
+import { SESSION_COOKIE_NAME } from './lib/cookie.js';
 
 export type UserEnv = {
   Variables: {
@@ -17,7 +18,7 @@ export type UserEnv = {
  * @returns ユーザーID セッションIDハッシュ値
  */
 export const sessionMiddleware = createMiddleware<UserEnv>(async (c, next) => {
-  const sessionId = getCookie(c, 'sessionId');
+  const sessionId = getCookie(c, SESSION_COOKIE_NAME);
   // CookieにsessionIdが存在しない場合
   if (!sessionId) {
     throw new HTTPException(401, { message: 'ログインしていません。' });
