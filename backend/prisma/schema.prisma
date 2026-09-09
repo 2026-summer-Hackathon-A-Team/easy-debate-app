@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id               Int               @id  @default(autoincrement())
+  userName         String            @map("user_name")  @db.VarChar(20)
+  passwordHash     String            @map("password_hash")  @db.VarChar(255)
+  streakCount      Int               @map("streak_count")  @default(0)
+  rate             Int               @default(1000)
+  moralScore       Int               @map("moral_score")  @default(1000)
+  deleteMarker     Int               @map("delete_marker")  @default(0)
+  deletedAt        DateTime?         @map("deleted_at")
+  createdAt        DateTime          @map("created_at")  @default(now())
+  loginSessions    LoginSession[]
+  debateHistorys   DebateHistory[]
+
+  @@unique([userName, deleteMarker])
+  @@map("user")
+}
+
+model LoginSession {
+  sessionIdHash  String    @map("session_id_hash")  @id @db.Char(64)
+  userId         Int       @map("user_id")
+  createdAt      DateTime  @map("created_at") @default(now())
+  lastLoginAt    DateTime  @map("last_login_at") @default(now())
+  user           User      @relation(fields: [userId], references: [id])
+
+  @@map("login_session")
+}
+
+model DebateHistory {
+  id                      String                 @db.Char(36)
+  userId                  Int                    @map("user_id")
+  winnerFlag              Boolean                @map("winner_flag")
+  matchedAt               DateTime               @map("matched_at") @default(now())
+  user                    User                   @relation(fields: [userId], references: [id])
+  rateUpdownHistory       RateUpdownHistory?
+  moralUpdownHistory      MoralUpdownHistory?
+  moralViolationHistory   MoralViolationHistory?
+
+  @@id([id, userId])
+  @@map("debate_history")
+}
+
+model RateUpdownHistory {
+  id                 Int             @id  @default(autoincrement())
+  debateHistoryId    String          @map("debate_history_id")  @db.Char(36)
+  userId             Int             @map("user_id")
+  rateUpdown         Int             @map("rate_updown")
+  debate_History     DebateHistory   @relation(fields: [debateHistoryId, userId], references: [id, userId])
+
+  @@unique([debateHistoryId, userId])
+  @@map("rate_updown_history")
+}
+
+model MoralUpdownHistory {
+  id                  Int             @id @default(autoincrement())
+  debateHistoryId     String          @map("debate_history_id")  @db.Char(36)
+  userId              Int             @map("user_id")
+  moralScoreUpdown    Int             @map("moral_score_updown")
+  debate_history      DebateHistory   @relation(fields: [debateHistoryId, userId], references: [id, userId])
+
+  @@unique([debateHistoryId, userId])
+  @@map("moral_updown_history")
+}
+
+model MoralViolationHistory {
+  id                           Int                       @id @default(autoincrement())
+  debateHistoryId              String                    @map("debate_history_id")  @db.Char(36)
+  userId                       Int                       @map("user_id")
+  moralViolationCategoryId     Int                       @map("moral_violation_category_id")
+  moralViolationReason         String                    @map("moral_violation_reason")  @db.VarChar(200)
+  debate_history               DebateHistory             @relation(fields: [debateHistoryId, userId], references: [id, userId])
+  moralViolationCategory       MoralViolationCategory    @relation(fields: [moralViolationCategoryId], references: [id])
+
+  @@unique([debateHistoryId, userId])
+  @@map("moral_violation_history")
+}
+
+model MoralViolationCategory {
+  id                        Int                        @id @default(autoincrement())
+  category                  String                     @unique @db.VarChar(30)
+  moralViolationHistory     MoralViolationHistory[]
+
+  @@map("moral_violation_category")
+}
