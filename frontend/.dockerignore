@@ -1,0 +1,34 @@
+# 依存ライブラリ（転送不要）
+**/node_modules
+
+# 使用しないパッケージマネージャーやログファイル
+**/dist
+**/build
+**/npm-debug.log
+
+# Git関連（履歴データはイメージに不要）
+**/.git
+**/.gitignore
+
+# エディタやOSの一時ファイル
+**/.vscode
+**/.DS_Store
+**/.idea
+**/Thumbs.db
+
+# 機密情報
+**/.env*
+**/.npmrc
+**/*.pem
+**/*.key
+
+# Docker関連
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*.yml
+
+# ログ関係
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
