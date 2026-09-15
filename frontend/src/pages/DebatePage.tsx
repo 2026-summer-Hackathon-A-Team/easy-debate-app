@@ -223,7 +223,7 @@ function DebatePage() {
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 w-full bg-white border border-[#e4e2dd] rounded-2xl flex flex-col h-[280vh] md:h-[56vh]">
+        <div className="flex-1 min-w-0 w-full bg-white border border-[#e4e2dd] rounded-2xl flex flex-col min-h-60 max-h-[75vh] md:h-[56vh] md:min-h-0 md:max-h-none">
           <div
             ref={chatAreaRef}
             className="flex-1 overflow-y-auto p-5 flex flex-col gap-3"
